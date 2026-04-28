@@ -1,6 +1,5 @@
 ﻿using System;
 using UnityEngine;
-
 namespace LokiInspector {
 
     #region Conditional Attributes
