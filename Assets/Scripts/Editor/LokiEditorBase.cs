@@ -189,13 +189,13 @@ namespace LokiInspector {
 
         private string GetFoldoutStateKey(UnityEngine.Object target, string foldoutName)
         {
-            return $"LokiEditor_Foldout_{target.GetInstanceID()}_{foldoutName}";
+            return $"LokiEditor_Foldout_{target.GetEntityId()}_{foldoutName}";
         }
 
 
         private string GetTabStateKey(UnityEngine.Object target, string pathPrefix)
         {
-            return $"LokiEditor_Tab_{target.GetInstanceID()}_{pathPrefix}";
+            return $"LokiEditor_Tab_{target.GetEntityId()}_{pathPrefix}";
         }
 
 

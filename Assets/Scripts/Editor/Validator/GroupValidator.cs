@@ -14,8 +14,7 @@ namespace LokiInspector
 
             // 1. Check MonoBehaviours in scene
             var behaviours = Object.FindObjectsByType<MonoBehaviour>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             );
             foreach (var behaviour in behaviours)
             {

@@ -13,8 +13,7 @@ namespace LokiInspector {
 
             // 1. Validate MonoBehaviours in the scene
             var behaviours = Object.FindObjectsByType<MonoBehaviour>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None
+                FindObjectsInactive.Include
             );
             foreach (var behaviour in behaviours)
             {
