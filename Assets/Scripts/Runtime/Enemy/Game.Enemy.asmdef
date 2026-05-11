@@ -1,8 +1,14 @@
 {
-    "name": "Core.InputSystem",
+    "name": "Game.Enemy",
     "rootNamespace": "",
     "references": [
-        "Unity.InputSystem"
+        "Core.StateMachine",
+        "Core.Singletons",
+        "Game.Factory",
+        "Game.Combat",
+        "PrimeTween.Runtime",
+        "UniTask",
+        "Core.Helpers"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

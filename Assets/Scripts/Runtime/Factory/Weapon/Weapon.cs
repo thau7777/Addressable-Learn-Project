@@ -1,82 +1,90 @@
-using System;
-using Unity.Cinemachine;
+﻿using System;
 using UnityEngine;
 
 public interface IWeapon
 {
     public WeaponData WeaponData { get; set; }
-    public bool IsInitialized { get; set; }
-    void OnEquip(Transform user);
+    void OnEquip(Transform user, Vector3 localPosition);
     void OnUnequip();
-    void SetWeaponData(WeaponData data);
-    void OnAttackTrigger(bool isAttacking);
-    void RegisterActionOnAttack(Action listener);
-    void DeregisterAllListener();
     bool IsEquals(WeaponData data);
 }
 public abstract class Weapon : MonoBehaviour, IWeapon
 {
-    public WeaponData WeaponData { get; set; }
-    public bool IsInitialized { get; set; }
+    public Quaternion rotationOffset; // set trong Inspector per weapon
+    public WeaponData WeaponData { get; private set; }
 
-    public Vector3 positionOnEquip;
-    public Vector3 rotationOnEquip;
+    private float _attackRateElapsedTime;
+    private bool CanAttack => _attackRateElapsedTime >= 1f / WeaponData.AttackRate;
 
-    protected bool _isAttacking;
+    private Transform _user;
+    protected Transform _currentTarget;
+    private int _enemyLayerMask;
+    private readonly Collider[] _overlapResults = new Collider[20]; // non-alloc, tránh GC
 
+    WeaponData IWeapon.WeaponData { get => WeaponData; set => WeaponData = value; }
     private event Action OnAttack;
-    public void RegisterActionOnAttack(Action listener)
+
+    public virtual void SetWeaponData(WeaponData data) => WeaponData = data;
+
+    public void OnEquip(Transform user, Vector3 localPosition)
     {
-        OnAttack += listener;
+        _user = user;
+        _enemyLayerMask = LayerMask.GetMask("Enemy");
+        _attackRateElapsedTime = 1f / WeaponData.AttackRate;
+        transform.SetParent(user);
+        transform.localPosition = localPosition;
     }
 
-    public void DeregisterAllListener()
+    public virtual void OnUnequip()
     {
-        if (OnAttack == null) return;
-        foreach (Delegate d in OnAttack.GetInvocationList())
-        {
-            OnAttack -= (Action)d;
-        }
-    }
-    public virtual void SetWeaponData(WeaponData data)
-    {
-        WeaponData = data;
+        _currentTarget = null;
     }
 
     public virtual void Update()
     {
-        if (_isAttacking && WeaponData.CanAttack)
+        _attackRateElapsedTime += Time.deltaTime;
+        _currentTarget = GetClosestEnemy();
+
+        if (_currentTarget != null && CanAttack)
         {
+            FaceTarget(_currentTarget);
             Attack();
         }
     }
-    public void OnAttackTrigger(bool isAttacking)
+
+    private Transform GetClosestEnemy()
     {
-        _isAttacking = isAttacking;
+        int count = Physics.OverlapSphereNonAlloc(_user.position, WeaponData.WeaponRange, _overlapResults, _enemyLayerMask);
+
+        Transform closest = null;
+        float closestDist = float.MaxValue;
+
+        for (int i = 0; i < count; i++)
+        {
+            float dist = Vector3.SqrMagnitude(_user.position - _overlapResults[i].transform.position);
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                closest = _overlapResults[i].transform;
+            }
+        }
+
+        return closest;
     }
+
+    private void FaceTarget(Transform target)
+    {
+        Vector3 dir = target.position - transform.position;
+        dir.y = 0f;
+        if (dir != Vector3.zero)
+            transform.rotation = Quaternion.LookRotation(dir) * rotationOffset;
+    }
+
     protected virtual void Attack()
     {
-        WeaponData.ResetAttackElapsedTime();
+        _attackRateElapsedTime = 0f;
         OnAttack?.Invoke();
     }
-    public void OnEquip(Transform user)
-    {
-        if(IsInitialized) return;
-        IsInitialized = true;
-        transform.SetParent(user);
-        transform.localPosition = positionOnEquip;
-        transform.localRotation = Quaternion.Euler(rotationOnEquip);
 
-    }
-
-    public void OnUnequip()
-    {
-        _isAttacking = false;
-        gameObject.SetActive(false);
-    }
-    public bool IsEquals(WeaponData data)
-    {
-        return WeaponData == data;
-    }
-
+    public bool IsEquals(WeaponData data) => WeaponData == data;
 }

@@ -1,7 +1,6 @@
+using Cysharp.Threading.Tasks;
 using LokiInspector;
 using UnityEngine;
-using UnityEngine.AddressableAssets;
-using static UnityEngine.Android.AndroidGame;
 
 [CreateAssetMenu(fileName = "GunData", menuName = "Scriptable Objects/Weapon/GunData", order = 0)]
 public class GunData : WeaponData
@@ -18,8 +17,6 @@ public class GunData : WeaponData
     [SerializeField, TabGroup("Basic Settings")]
     private float _bulletSpeed = 50f;
     [SerializeField, TabGroup("Basic Settings")]
-    private float _bulletRange = 100f;
-    [SerializeField, TabGroup("Basic Settings")]
     private float _bulletDamage = 10f;
 
     [SerializeField, TabGroup("Spread Settings")]
@@ -35,14 +32,18 @@ public class GunData : WeaponData
     [SerializeField, TabGroup("Spread Settings")]
     private AnimationCurve returnCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
-
+    [SerializeField, TabGroup("Animation Settings")]
+    private float _shakeMagnitude = 0.05f;
+    [SerializeField, TabGroup("Animation Settings")]
+    private float _shakeDuration = 0.1f;
+    [SerializeField, TabGroup("Animation Settings")]
+    private int _shakeFrequency = 20;
 
     public uint AmmoPerMagazine => _ammoPerMagazine;
     public uint MagazineCapacity => _magazineCapacity;
     public float ReloadTime => _reloadTime;
 
     public float BulletSpeed => _bulletSpeed;
-    public float BulletRange => _bulletRange;
     public float BulletDamage => _bulletDamage;
 
 
@@ -54,18 +55,16 @@ public class GunData : WeaponData
     public AnimationCurve SpreadCurve => spreadCurve;
     public AnimationCurve ReturnCurve => returnCurve;
 
-    public override void OnWeaponChose()
+    public float ShakeMagnitude => _shakeMagnitude;
+    public float ShakeDuration => _shakeDuration;
+    public int ShakeFrequency => _shakeFrequency;
+
+    public override void LoadWeaponAssets()
     {
-        base.OnWeaponChose();
+        base.LoadWeaponAssets();
         if(projectileSettings != null)
         {
-            projectileSettings.prefabRef.LoadAssetAsync<GameObject>().Completed += handle =>
-            {
-                if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
-                {
-                    projectileSettings.Prefab = handle.Result;
-                }
-            };
+            projectileSettings.LoadPrefabAsync().Forget();
         }
     }
 }

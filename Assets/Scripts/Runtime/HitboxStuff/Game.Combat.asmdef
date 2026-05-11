@@ -1,9 +1,7 @@
 {
-    "name": "Core.InputSystem",
+    "name": "Game.Combat",
     "rootNamespace": "",
-    "references": [
-        "Unity.InputSystem"
-    ],
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

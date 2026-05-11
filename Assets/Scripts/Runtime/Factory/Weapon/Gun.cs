@@ -1,73 +1,49 @@
+﻿using PrimeTween;
 using UnityEngine;
-using UnityEngine.InputSystem;
+
 public class Gun : Weapon
 {
-    [SerializeField]
-    private Transform _tip;
+    [SerializeField] private Transform _tip;
+    [SerializeField] private Transform _weaponModel;
 
-    [SerializeField, Range(0,5)]
-    private float _offsetToTargetPos = 3f;
-
-    [SerializeField]
-    private Quaternion _rotationOffset = Quaternion.Euler(1f, 90f, 1f);
     private GunData GunData => WeaponData as GunData;
-    private uint currentAmmo;
-    private uint maxAmmo;                      // <--
-
+    private uint _currentAmmo;
+    private uint _maxAmmo;
 
     public override void SetWeaponData(WeaponData data)
     {
         base.SetWeaponData(data);
-        maxAmmo = GunData.AmmoPerMagazine;
-        currentAmmo = maxAmmo;
+        _maxAmmo = GunData.AmmoPerMagazine;
+        _currentAmmo = _maxAmmo;
     }
-    public override void Update()
-    {
-        base.Update();
-        RotateHandler();
-    }   
-    private void RotateHandler()
-    {
-        if (!CursorHelpers.GetCursorWorldPositionOnFlatSurface(Mouse.current.position.ReadValue(),out Vector3 worldPos)) return;
 
-        Vector3 lookDir = worldPos - transform.position;
-        lookDir.y = 0f;
+    public override void Update() => base.Update();
 
-        if (lookDir.sqrMagnitude > 0.001f)
-        {
-            Quaternion targetRotation = Quaternion.LookRotation(lookDir) * _rotationOffset;
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 100f);
-        }
-    }
     protected override void Attack()
     {
-        if (currentAmmo <= 0)
-        {
-            Reload();
-            return;
-        }
+        if (_currentAmmo <= 0) { Reload(); return; }
 
-        Vector3 targetPos = transform.forward;
-        if (CursorHelpers.GetCursorWorldPositionOnFlatSurface(Mouse.current.position.ReadValue(), out Vector3 mouseWorldPos))
-        {
-            targetPos = mouseWorldPos;
-
-            Vector3 camFlatForward = CamHelpers.GetCamFlatForward();
-            targetPos -= camFlatForward * (_tip.position.y / _offsetToTargetPos);
-        }
-        targetPos.y = _tip.position.y;
+        // barrel direction: -transform.right due to rotationOffset Y=+90
+        Vector3 barrelDir = -transform.right;
+        Vector3 targetPos = _tip.position + barrelDir * 3;
 
         Projectile projectile = FlyweightFactory.Spawn(GunData.projectileSettings) as Projectile;
-        projectile.FlyweightInit(_tip.position, Quaternion.LookRotation(targetPos - _tip.position));
+        projectile.FlyweightInit(_tip.position, Quaternion.LookRotation(barrelDir));
         projectile.ShootProjectile(_tip.position, targetPos, GunData);
-        currentAmmo--;
+        _currentAmmo--;
+
         base.Attack();
+
+        Tween.ShakeLocalPosition(_weaponModel,
+            new Vector3(GunData.ShakeMagnitude, GunData.ShakeMagnitude, 0f),
+            GunData.ShakeDuration,
+            GunData.ShakeFrequency);
     }
 
     public void Reload()
     {
-        if (currentAmmo == maxAmmo) return;
-        currentAmmo = maxAmmo;
+        if (_currentAmmo == _maxAmmo) return;
+        _currentAmmo = _maxAmmo;
         Debug.Log("Gun Reloaded");
     }
 }

@@ -1,8 +1,11 @@
 {
-    "name": "Core.InputSystem",
+    "name": "Game.Managers",
     "rootNamespace": "",
     "references": [
-        "Unity.InputSystem"
+        "Core.Singletons",
+        "Game.Factory",
+        "Game.Enemy",
+        "UniTask"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

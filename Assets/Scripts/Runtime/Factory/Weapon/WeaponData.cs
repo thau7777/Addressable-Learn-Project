@@ -1,8 +1,8 @@
 using Cysharp.Threading.Tasks;
 using LokiInspector;
-using System.Threading;
 using UnityEngine;
 using UnityEngine.AddressableAssets;
+using UnityEngine.ResourceManagement.AsyncOperations;
 
 public abstract class WeaponData : ScriptableObject
 {
@@ -10,96 +10,78 @@ public abstract class WeaponData : ScriptableObject
     public AssetReference weaponPrefabRef;
     [TabGroup("References")]
     public AssetReference weaponIconRef;
-    [TabGroup("References")]
-    public AssetReference weaponCrosshairRef;
-
-    public GameObject WeaponPrefab { get; set; }
-    public GameObject WeaponIconPrefab { get; set; }
-    public GameObject WeaponCrosshairPrefab { get; set; }
 
     [TabGroup("Basic Info"), SerializeField]
     protected bool isAutomatic = true;
-    [TabGroup("Basic Info"),SerializeField]
+    [TabGroup("Basic Info"), SerializeField]
     protected float attackRate = 0.1f;
-    protected float attackRateElapsedTime = 0f;
+    [TabGroup("Basic Info"), SerializeField]
+    protected float weaponRange = 5f;
+    public float WeaponRange => weaponRange;
 
+    public GameObject WeaponPrefab { get; set; }
+    public GameObject WeaponIconPrefab { get; set; }
 
+    private AsyncOperationHandle<GameObject> _weaponAsyncOperationHandle;
+    private AsyncOperationHandle<GameObject> _iconAsyncOperationHandle;
     public bool IsAutomatic => isAutomatic;
-    public bool CanAttack => attackRateElapsedTime >= attackRate;
+    public float AttackRate => attackRate; // expose cho Weapon d�ng
 
-    private CancellationTokenSource _attackRateCts;
-
-    public virtual void OnWeaponChose()
+    public virtual async UniTask LoadWeaponAssetsAsync()
     {
         if (weaponPrefabRef.RuntimeKeyIsValid())
         {
-
-            Addressables.LoadAssetAsync<GameObject>(weaponPrefabRef).Completed += handle =>
-            {
-                if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
-                {
-                    WeaponPrefab = handle.Result;
-                }
-            };
+            _weaponAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponPrefabRef);
+            await _weaponAsyncOperationHandle.ToUniTask();
+            if (_weaponAsyncOperationHandle.Status == AsyncOperationStatus.Succeeded)
+                WeaponPrefab = _weaponAsyncOperationHandle.Result;
         }
+
         if (weaponIconRef.RuntimeKeyIsValid())
         {
-            Addressables.LoadAssetAsync<GameObject>(weaponIconRef).Completed += handle =>
-            {
-                if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
-                {
-                    WeaponIconPrefab = handle.Result;
-                }
-            };
+            _iconAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponIconRef);
+            await _iconAsyncOperationHandle.ToUniTask();
+            if (_iconAsyncOperationHandle.Status == AsyncOperationStatus.Succeeded)
+                WeaponIconPrefab = _iconAsyncOperationHandle.Result;
         }
-        if (weaponCrosshairRef.RuntimeKeyIsValid())
-        {
-            Addressables.LoadAssetAsync<GameObject>(weaponCrosshairRef).Completed += handle =>
-            {
-                if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
-                {
-                    WeaponCrosshairPrefab = handle.Result;
-                }
-            };
-        }
-        else
-        {
-            weaponCrosshairRef = CrosshairFactory.Instance.defaultCrosshairPrefabRef;
-            if (weaponCrosshairRef.RuntimeKeyIsValid())
-            {
-                Addressables.LoadAssetAsync<GameObject>(weaponCrosshairRef).Completed += handle =>
-                {
-                    if (handle.Status == UnityEngine.ResourceManagement.AsyncOperations.AsyncOperationStatus.Succeeded)
-                    {
-                        WeaponCrosshairPrefab = handle.Result;
-                    }
-                };
-            }
-        }
-    }
-    public void OnWeaponFirstCreate()
-    {
-        attackRateElapsedTime = attackRate;
-        _attackRateCts = new CancellationTokenSource();
-        StartFireRateCounter(_attackRateCts.Token).Forget();
     }
 
-    private async UniTaskVoid StartFireRateCounter(CancellationToken ct)
+    public virtual void LoadWeaponAssets()
     {
-        while (!ct.IsCancellationRequested)
+        if (weaponPrefabRef.RuntimeKeyIsValid())
         {
-            attackRateElapsedTime += Time.deltaTime;
-            await UniTask.Yield(ct);
+            _weaponAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponPrefabRef);
+            _weaponAsyncOperationHandle.Completed += handle =>
+            {
+                if (handle.Status == AsyncOperationStatus.Succeeded)
+                    WeaponPrefab = handle.Result;
+            };
+        }
+
+        if (weaponIconRef.RuntimeKeyIsValid())
+        {
+            _iconAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponIconRef);
+            _iconAsyncOperationHandle.Completed += handle =>
+            {
+                if (handle.Status == AsyncOperationStatus.Succeeded)
+                    WeaponIconPrefab = handle.Result;
+            };
         }
     }
-    public void ResetAttackElapsedTime()
+
+    public virtual void UnloadWeaponAssets()
     {
-        attackRateElapsedTime = 0f;
+        if (_weaponAsyncOperationHandle.IsValid())
+        {
+            Addressables.Release(_weaponAsyncOperationHandle);
+            WeaponPrefab = null;
+        }
+
+        if (_iconAsyncOperationHandle.IsValid())
+        {
+            Addressables.Release(_iconAsyncOperationHandle);
+            WeaponIconPrefab = null;
+        }
     }
-    public void StopTask()
-    {
-        _attackRateCts?.Cancel();
-        _attackRateCts?.Dispose();
-        _attackRateCts = null;
-    }
+
 }
