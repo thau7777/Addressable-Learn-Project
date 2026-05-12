@@ -37,7 +37,7 @@ public class StraightProjectile : Projectile
     {
         if (!_isInitialized) return;
         _currentDistance += _rb.linearVelocity.magnitude * Time.fixedDeltaTime;
-        if (_currentDistance >= _gunData.BulletRange)
+        if (_currentDistance >= _gunData.WeaponRange)
         {
             Despawn();
         }
@@ -46,6 +46,7 @@ public class StraightProjectile : Projectile
 
     protected override void OnTriggerEnter(Collider other)
     {
+        if((StraightProjectileSettings.collisionLayers.value & (1 << other.gameObject.layer)) == 0) return; // Ignore collision with player
         base.OnTriggerEnter(other);
         Despawn();
     }

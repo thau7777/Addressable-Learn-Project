@@ -24,12 +24,7 @@ MonoBehaviour:
     m_SubObjectType: 
     m_SubObjectGUID: 
     m_EditorAssetChanged: 0
-  weaponCrosshairRef:
-    m_AssetGUID: 2b36226b8586cbb419c5503d66f105d2
-    m_SubObjectName: 
-    m_SubObjectType: 
-    m_SubObjectGUID: 
-    m_EditorAssetChanged: 0
   isAutomatic: 1
-  attackRate: 0.5
-  attackRateElapsedTime: 1.064165
+  attackRate: 0.65
+  weaponRange: 3
+  _attackAnim: {fileID: 11400000, guid: 5b800ec5a420473419b7bc0ff5cacaf7, type: 2}

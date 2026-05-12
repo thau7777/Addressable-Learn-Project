@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Pistol_Data
   m_EditorClassIdentifier: Assembly-CSharp::GunData
   weaponPrefabRef:
-    m_AssetGUID: bc15ca1af47251e4599262dbd6beaeff
+    m_AssetGUID: cf4625848d6e6024ca822204d6ff13b6
     m_SubObjectName: 
     m_SubObjectType: 
     m_SubObjectGUID: 
@@ -24,20 +24,14 @@ MonoBehaviour:
     m_SubObjectType: 
     m_SubObjectGUID: 
     m_EditorAssetChanged: 0
-  weaponCrosshairRef:
-    m_AssetGUID: 0862bea9660456548981aeff88d7bee3
-    m_SubObjectName: 
-    m_SubObjectType: 
-    m_SubObjectGUID: 
-    m_EditorAssetChanged: 0
   isAutomatic: 1
-  attackRate: 0.18
+  attackRate: 1
+  weaponRange: 10
   projectileSettings: {fileID: 11400000, guid: 6e1c7efd19e7e4344a914c2e5b656894, type: 2}
   _ammoPerMagazine: 30
   _magazineCapacity: 3
   _reloadTime: 1.5
   _bulletSpeed: 50
-  _bulletRange: 100
   _bulletDamage: 10
   spreadOnShoot: 10
   returnDuration: 0.02
@@ -109,3 +103,6 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  _shakeMagnitude: 0.05
+  _shakeDuration: 0.1
+  _shakeFrequency: 20

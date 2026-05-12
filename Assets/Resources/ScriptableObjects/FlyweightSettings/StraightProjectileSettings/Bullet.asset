@@ -21,3 +21,6 @@ MonoBehaviour:
     m_SubObjectType: 
     m_SubObjectGUID: 
     m_EditorAssetChanged: 0
+  collisionLayers:
+    serializedVersion: 2
+    m_Bits: 129

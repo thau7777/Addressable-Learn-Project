@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class PlayerMove : State<PlayerController>
 {
     public PlayerMove(PlayerController owner) : base(owner) { }
@@ -8,7 +10,7 @@ public class PlayerMove : State<PlayerController>
 
     public override void FixedTick()
     {
-        Owner.Rb.linearVelocity = Owner.inputDir * Owner.MoveSpeed;
+        Owner.Rb.MovePosition(Owner.Rb.position + Owner.inputDir * Owner.MoveSpeed * Time.fixedDeltaTime);
     }
 
     public override IState GetTransition()

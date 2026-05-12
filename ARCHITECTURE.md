@@ -11,7 +11,7 @@
 EventBus/         — Generic type-safe event system
 Singletons/       — Three singleton base classes
 Attributes/       — Custom inspector attributes (LokiAttributes)
-StateMachine/     — Generic state machine
+StateMachine/     — Generic state machine (Tick + FixedTick)
 InputSystem/      — Input reader (ScriptableObject-based)
 HitboxStuff/      — IDamageable interface
 Factory/
@@ -26,13 +26,13 @@ Enemy/
     Attack/       — IAttackStrategy + data ScriptableObjects
   AttackAnimData/ — IAttackAnimation + data ScriptableObjects
 Player/
-  PlayerStates/   — Player state machine states
+  PlayerStates/   — Player state machine states (Idle/Move/Hurt)
 Managers/
   EnemyManager
   WeaponManager   — equip/unequip weapons, orbital positioning; initialized by PlayerController
   Buff/
     BuffSO.cs     — abstract Command base (Apply / Remove)
-    BuffManager.cs — invoker; holds List<BuffSO> active buffs
+    BuffManager.cs — invoker; holds List<BuffSO> active buffs + _testBuffs for editor testing
     Weapon/       — EquipWeaponBuffSO
     Stat/         — (future)
     Ability/      — (future)
@@ -48,7 +48,7 @@ Helpers/          — Static helpers + extension methods
 **Entry point:** `FlyweightFactory` (Singleton)  
 **Flow:** `FlyweightSettings.Create()` → `Flyweight` instance → pooled via `IObjectPool<Flyweight>`  
 **Key types:**
-- `FlyweightSettings` (abstract SO) — intrinsic state + pool config + Addressable prefab ref
+- `FlyweightSettings` (abstract SO) — intrinsic state + pool config + Addressable prefab ref. `OnGet` detaches from parent and activates; `OnRelease` deactivates.
 - `Flyweight` (abstract MB) — base for anything pooled; calls `ReturnToPool()`
 - `FlyweightFactory` — single pool dictionary keyed by settings asset
 
@@ -60,20 +60,39 @@ Helpers/          — Static helpers + extension methods
 **Hierarchy:**
 ```
 WeaponData (abstract SO)
-  ├── GunData      → Gun (Weapon)    — shake anim on shoot (ShakeMagnitude/Duration/Frequency)
+  ├── GunData      → Gun (Weapon)    — ammo/reload, recoil animation on shoot
   └── MeleeData    → Melee (Weapon)  — AttackAnim : WeaponAttackAnimSO
 
 Weapon (abstract MB) implements IWeapon
-  ├── Gun          — fires Projectiles, handles ammo/reload/spread, PrimeTween shake on attack
+  ├── Gun          — fires Projectiles, tracks ammo/reload, PrimeTween recoil on attack
   └── Melee        — plays WeaponAttackAnimSO on attack (stab or swing)
 
 WeaponAttackAnimSO (abstract SO)
-  ├── StabAttackAnimSO   — translates _weaponModel along local Z then returns
-  └── SwingAttackAnimSO  — lunge (local Z) + rotation around configurable axis, then returns
+  ├── StabAttackAnimSO   — translates _weaponModel along local Z (stabPos = origin + forward * range) then returns
+  └── SwingAttackAnimSO  — lunge toward target (flat XZ, distance-clamped) + X-axis rotation, durations scaled by attackInterval
 ```
-**Factory:** `WeaponFactory` (Singleton) — `GetWeapon(WeaponData)` instantiates and initializes.  
-**Equip system:** `WeaponManager` (Singleton) — owns `List<IWeapon>`, orbits weapons around player. Initialized by `PlayerController.Awake()` via `Initialize(transform)`.  
-**Assets:** `WeaponData.LoadWeaponAssets()` (callback) + `LoadWeaponAssetsAsync()` (UniTask) — async version used by `EquipWeaponBuffSO`.
+
+**Auto-targeting:** `Weapon.Update()` calls `Physics.OverlapSphereNonAlloc` each frame (non-alloc, 20-slot buffer, Enemy layer mask) to find the closest enemy. When a target is in range, `FaceTarget()` rotates the weapon (XZ-flat look) and `Attack()` fires automatically. No player input required — weapons are autonomous agents.
+
+**Attack rate:** `CanAttack` gates attack on elapsed time ≥ `1f / AttackRate`. On equip, `_attackRateElapsedTime` is pre-charged to the full interval so the weapon fires immediately.
+
+**Gun specifics (`GunData`):**
+- Ammo: `AmmoPerMagazine`, `MagazineCapacity`, `ReloadTime`
+- Ballistics: `BulletSpeed`, `BulletDamage`
+- Spread curves: `SpreadOnShoot`, `ReturnDuration`, `MaxSpreadThreshold`, `SpreadDuration`, `SpreadCurve`, `ReturnCurve` (data defined, not yet consumed by Gun)
+- Recoil: `RecoilDistance`, `RecoilDuration`, `RecoilReturnDuration`, `RecoilEase`, `RecoilReturnEase` — `_weaponModel` pushed backward then returned via PrimeTween `Sequence`
+
+**Melee specifics:**
+- `Melee.Attack()` passes `_currentTarget` to `AttackAnim.Play()` so animations can orient toward the enemy
+- `StopAnimation()` / `OnUnequip()` snap the model back to `_originLocalPos`/`_originLocalRot`
+
+**`WeaponAttackAnimSO.Play` signature:**  
+`Play(Transform weaponModel, Transform target, Vector3 originLocalPos, float range, Quaternion originLocalRot, float attackInterval)`  
+All concrete implementations scale their tween durations by `attackInterval` (= `1f / AttackRate`).
+
+**Factory:** `WeaponFactory` (Singleton) — `GetWeapon(WeaponData)` instantiates from `data.WeaponPrefab`.  
+**Equip system:** `WeaponManager` (Singleton) — owns `List<IWeapon>`, orbits weapons around player at `_weaponOrbitRadius`. `RefreshWeaponPositions()` recalculates all slots after any equip/unequip. Initialized by `PlayerController.Awake()`.  
+**Assets:** `WeaponData.LoadWeaponAssetsAsync()` loads prefab + icon via Addressables. `GunData` override also loads `projectileSettings.LoadPrefabAsync()`.
 
 **OCP compliance:** New weapon type = new `WeaponData` subclass + new `Weapon` subclass. New melee anim = new `WeaponAttackAnimSO` subclass. No existing code changes.
 
@@ -84,12 +103,16 @@ WeaponAttackAnimSO (abstract SO)
 ```
 ProjectileSettings (abstract SO) : FlyweightSettings
   └── StraightProjectileSettings  → StraightProjectile (Projectile)
+                                     + collisionLayers: LayerMask (filters OnTriggerEnter)
 
 Projectile (abstract MB) : Flyweight
-  └── StraightProjectile          — Rigidbody-driven, distance-limited
+  └── StraightProjectile          — Rigidbody-driven, distance-limited, ContinuousDynamic collision
 ```
-**Spawn:** `GunData.projectileSettings` → `FlyweightFactory.Spawn()` → `ShootProjectile(start, target, gunData)`  
-**Despawn:** On trigger enter or max distance → `Despawn()` → `ReturnToPool()`
+
+**Trail management:** `Projectile` owns a `TrailRenderer`. `OnDisable` clears + disables the trail (prevents teleport artifact). `ResetTrail()` re-enables it on fire. `StraightProjectile.ShootProjectile()` calls `ResetTrail()` after positioning.
+
+**Spawn:** `GunData.projectileSettings` → `FlyweightFactory.Spawn()` → `ShootProjectile(tip.position, tip.position + tip.forward, gunData)`  
+**Despawn:** `StraightProjectile.OnTriggerEnter` filters by `collisionLayers` bitmask; on match or max distance → `Despawn()` → `ReturnToPool()`
 
 ---
 
@@ -110,8 +133,15 @@ Projectile (abstract MB) : Flyweight
 
 ### 5. State Machine
 **Generic:** `StateMachine` + `IState` + `State<TOwner>`  
-**Used by:** `PlayerController` (Idle/Move/Hurt) and `EnemyController` (Spawn/Idle/Move/Attack/Die)  
-**Transition:** Each state's `GetTransition()` returns next `IState` or null to stay.
+**`IState` contract:** `OnEnter`, `Tick`, `FixedTick`, `GetTransition` (null = stay), `OnExit`  
+**`State<TOwner>`:** `FixedTick()` is virtual (no-op default) — override only when physics is needed.  
+**StateMachine:** `Tick()` checks `GetTransition()` first, then calls `Current.Tick()`. `FixedTick()` delegates directly to current state. `ForceTransition<T>()` and `ForceTransition(IState)` for imperative transitions.
+
+**Used by:**
+- `PlayerController` — `Update()` → `SM.Tick()`, `FixedUpdate()` → `SM.FixedTick()`
+  - `PlayerIdle` / `PlayerMove` — movement physics in `PlayerMove.FixedTick()` via `Rb.MovePosition`
+  - `PlayerHurt` — applies `PendingKnockback`, triggered via `SM.ForceTransition<PlayerHurt>()`
+- `EnemyController` — Spawn/Idle/Move/Attack/Die
 
 ---
 
@@ -132,15 +162,26 @@ Currently only Move is mapped. Input action map switching supported.
 
 ### 8. Buff System
 **Pattern:** Command — each `BuffSO` subclass is a self-contained command with `Apply()` / `Remove()`.  
-**Invoker:** `BuffManager` (Singleton) — `ApplyBuff(BuffSO)` / `RemoveBuff(BuffSO)`, tracks `List<BuffSO> _activeBuffs`. Same SO reference stored N times — removal takes the first match (correct stacking behavior).  
+**Invoker:** `BuffManager` (Singleton) — `ApplyBuff(BuffSO)` / `RemoveBuff(BuffSO)`, tracks `List<BuffSO> _activeBuffs`. Has `_testBuffs` (SerializeField) applied in `Start()` for editor testing. Same SO reference stored N times — removal takes the first match (correct stacking behavior).  
 **Concrete commands:**
-- `EquipWeaponBuffSO` — loads weapon assets async, then calls `WeaponManager.EquipWeapon`. `Remove()` calls `UnequipWeapon`.  
+- `EquipWeaponBuffSO` — calls `LoadWeaponAssetsAsync()` (async), then `WeaponManager.EquipWeapon`. `Remove()` calls `UnequipWeapon`.
 
 **OCP compliance:** New buff type = new `BuffSO` subclass in the appropriate `Buff/<Category>/` folder. No `BuffManager` changes.
 
 ---
 
-### 9. Singletons
+### 9. Helpers
+
+| Class | Key members |
+|---|---|
+| `CamHelpers` | `Cam` (cached, refreshed on scene load), `GetCamFlatForward()` (XZ-flat normalized) |
+| `CursorHelpers` | `Hide(confine)`, `Show(confine)`, `Toggle(confine)` |
+
+`CamHelpers` subscribes to `SceneManager.sceneLoaded` once (static ctor guard) to refresh the `Camera.main` cache across scene transitions.
+
+---
+
+### 10. Singletons
 | Class | Behavior |
 |---|---|
 | `Singleton<T>` | Lazy find, no DontDestroyOnLoad |
@@ -157,7 +198,7 @@ Currently only Move is mapped. Input action map switching supported.
 | `IMovementStrategy` | `Move(owner, target)` — pluggable enemy movement |
 | `IAttackStrategy` | `StartAttack / Interrupt / IsReady` — pluggable enemy attack |
 | `IAttackAnimation` | `Build / OnInterrupt` — pluggable attack animation |
-| `IState` | State machine contract |
+| `IState` | State machine contract (`OnEnter/Tick/FixedTick/GetTransition/OnExit`) |
 | `IEvent` | Marker for event bus events |
 
 ---
@@ -166,15 +207,15 @@ Currently only Move is mapped. Input action map switching supported.
 | Package | Usage |
 |---|---|
 | Addressables | Weapon prefabs, weapon icons, Flyweight prefabs |
-| UniTask | Async asset loading (`LoadPrefabAsync`, `LoadWeaponAssets`) |
-| PrimeTween | Melee attack animation, enemy spawn/idle tweens |
+| UniTask | Async asset loading (`LoadPrefabAsync`, `LoadWeaponAssetsAsync`) |
+| PrimeTween | Melee attack animations, gun recoil, enemy spawn/idle tweens |
 | Unity Input System | Player input via generated `MyInputActions` |
 
 ---
 
 ## SOLID Scorecard (current state)
 - **S** — Good. Each class has a clear responsibility.
-- **O** — Good. Weapons, enemies, strategies all extend via new subclasses.
+- **O** — Good. Weapons, enemies, strategies, attack anims, and buffs all extend via new subclasses.
 - **L** — Good. `Gun`/`Melee` are substitutable as `IWeapon`; strategies are substitutable.
-- **I** — Good. Interfaces are small and focused.
-- **D** — Mostly good. `Weapon` base class depends on `WeaponData` (concrete SO) — acceptable Unity tradeoff. `Gun` casts to `GunData` internally.
+- **I** — Good. Interfaces are small and focused. `IState` now includes `FixedTick` — still cohesive.
+- **D** — Mostly good. `Weapon` base depends on `WeaponData` (concrete SO) — acceptable Unity tradeoff. `Gun` and `Melee` downcast to their typed data internally.

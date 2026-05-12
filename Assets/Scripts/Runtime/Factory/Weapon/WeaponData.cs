@@ -29,7 +29,7 @@ public abstract class WeaponData : ScriptableObject
 
     public virtual async UniTask LoadWeaponAssetsAsync()
     {
-        if (weaponPrefabRef.RuntimeKeyIsValid())
+        if (WeaponPrefab == null && weaponPrefabRef.RuntimeKeyIsValid())
         {
             _weaponAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponPrefabRef);
             await _weaponAsyncOperationHandle.ToUniTask();
@@ -37,7 +37,7 @@ public abstract class WeaponData : ScriptableObject
                 WeaponPrefab = _weaponAsyncOperationHandle.Result;
         }
 
-        if (weaponIconRef.RuntimeKeyIsValid())
+        if (WeaponIconPrefab == null && weaponIconRef.RuntimeKeyIsValid())
         {
             _iconAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponIconRef);
             await _iconAsyncOperationHandle.ToUniTask();
@@ -46,28 +46,7 @@ public abstract class WeaponData : ScriptableObject
         }
     }
 
-    public virtual void LoadWeaponAssets()
-    {
-        if (weaponPrefabRef.RuntimeKeyIsValid())
-        {
-            _weaponAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponPrefabRef);
-            _weaponAsyncOperationHandle.Completed += handle =>
-            {
-                if (handle.Status == AsyncOperationStatus.Succeeded)
-                    WeaponPrefab = handle.Result;
-            };
-        }
-
-        if (weaponIconRef.RuntimeKeyIsValid())
-        {
-            _iconAsyncOperationHandle = Addressables.LoadAssetAsync<GameObject>(weaponIconRef);
-            _iconAsyncOperationHandle.Completed += handle =>
-            {
-                if (handle.Status == AsyncOperationStatus.Succeeded)
-                    WeaponIconPrefab = handle.Result;
-            };
-        }
-    }
+    
 
     public virtual void UnloadWeaponAssets()
     {

@@ -19,4 +19,17 @@ public static class CameraExtensions
         result.y += margin.y;
         return result;
     }
+
+    public static bool ScreenToWorldPosition(Vector2 screenPos, float height, out Vector3 position)
+    {
+        Ray ray = CamHelpers.Cam.ScreenPointToRay(screenPos);
+        Plane plane = new Plane(Vector3.up, new Vector3(0f, height, 0f));
+        if (plane.Raycast(ray, out float dist))
+        {
+            position = ray.GetPoint(dist);
+            return true;
+        }
+        position = Vector3.zero;
+        return false;
+    }
 }

@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f36aa458796020343a913e78758fb06e, type: 3}
+  m_Name: Strawberry
+  m_EditorClassIdentifier: Assembly-CSharp::EnemyData
+  collectionCheck: 1
+  defaultCapacity: 10
+  maxPoolSize: 30
+  prefabRef:
+    m_AssetGUID: 08be532407f08e444abe635736ac1b96
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  maxHP: 50
+  moveSpeed: 3
+  expDrop: 5
+  ripenessRate: 1
+  spawnDuration: 0.5
+  movementStrategy: {fileID: 11400000, guid: c724ec30bfc61ee4a93c749f49111611, type: 2}
+  attackStrategy: {fileID: 11400000, guid: c225da8c0c531414aa0a988f2c944812, type: 2}
+  fracturePrefab: {fileID: 0}
+  splitsOnDeath: 0
+  splitPrefab: {fileID: 0}
+  splitCount: 3

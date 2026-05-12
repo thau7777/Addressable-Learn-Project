@@ -1,5 +1,6 @@
 using Cysharp.Threading.Tasks;
 using LokiInspector;
+using PrimeTween;
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "GunData", menuName = "Scriptable Objects/Weapon/GunData", order = 0)]
@@ -33,11 +34,15 @@ public class GunData : WeaponData
     private AnimationCurve returnCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
     [SerializeField, TabGroup("Animation Settings")]
-    private float _shakeMagnitude = 0.05f;
+    private float _recoilDistance = 0.15f;
     [SerializeField, TabGroup("Animation Settings")]
-    private float _shakeDuration = 0.1f;
+    private float _recoilDuration = 0.05f;
     [SerializeField, TabGroup("Animation Settings")]
-    private int _shakeFrequency = 20;
+    private float _recoilReturnDuration = 0.12f;
+    [SerializeField, TabGroup("Animation Settings")]
+    private Ease _recoilEase = Ease.OutQuad;
+    [SerializeField, TabGroup("Animation Settings")]
+    private Ease _recoilReturnEase = Ease.InOutSine;
 
     public uint AmmoPerMagazine => _ammoPerMagazine;
     public uint MagazineCapacity => _magazineCapacity;
@@ -46,8 +51,6 @@ public class GunData : WeaponData
     public float BulletSpeed => _bulletSpeed;
     public float BulletDamage => _bulletDamage;
 
-
-
     public float SpreadOnShoot => spreadOnShoot;
     public float ReturnDuration => returnDuration;
     public float MaxSpreadThreshold => maxSpreadThreshold;
@@ -55,16 +58,17 @@ public class GunData : WeaponData
     public AnimationCurve SpreadCurve => spreadCurve;
     public AnimationCurve ReturnCurve => returnCurve;
 
-    public float ShakeMagnitude => _shakeMagnitude;
-    public float ShakeDuration => _shakeDuration;
-    public int ShakeFrequency => _shakeFrequency;
+    public float RecoilDistance => _recoilDistance;
+    public float RecoilDuration => _recoilDuration;
+    public float RecoilReturnDuration => _recoilReturnDuration;
+    public Ease RecoilEase => _recoilEase;
+    public Ease RecoilReturnEase => _recoilReturnEase;
 
-    public override void LoadWeaponAssets()
+    public override async UniTask LoadWeaponAssetsAsync()
     {
-        base.LoadWeaponAssets();
-        if(projectileSettings != null)
-        {
-            projectileSettings.LoadPrefabAsync().Forget();
-        }
+        await base.LoadWeaponAssetsAsync();
+        if (projectileSettings != null)
+            await projectileSettings.LoadPrefabAsync();
     }
+    
 }

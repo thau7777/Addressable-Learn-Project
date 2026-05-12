@@ -1,34 +1,31 @@
-using UnityEngine;
+﻿using UnityEngine;
 
 public class PlayerHurt : State<PlayerController>
 {
-    [SerializeField] private float _knockbackDecay = 15f;
     private Vector3 _knockbackVelocity;
-    private readonly float _exitThreshold = 0.05f;
+    private float _damping = 10f; // tốc độ decay
 
     public PlayerHurt(PlayerController owner) : base(owner) { }
 
     public override void OnEnter()
     {
-        _knockbackVelocity = Owner.PendingKnockback; // take ownership of the force
-        // hurt anim, flash VFX
+        _knockbackVelocity = Owner.PendingKnockback;
     }
-
-    public override void OnExit() { }
-    public override void Tick() { }
-
+    public override void Tick()
+    {
+    }
     public override void FixedTick()
     {
-        Owner.Rb.linearVelocity = _knockbackVelocity;
-        _knockbackVelocity = Vector3.MoveTowards(_knockbackVelocity, Vector3.zero, _knockbackDecay * Time.fixedDeltaTime);
+        Owner.Rb.MovePosition(Owner.Rb.position + _knockbackVelocity * Time.fixedDeltaTime);
+        _knockbackVelocity = Vector3.Lerp(_knockbackVelocity, Vector3.zero, _damping * Time.fixedDeltaTime);
     }
-
     public override IState GetTransition()
     {
-        if (_knockbackVelocity.sqrMagnitude > _exitThreshold) return null;
-
-        return Owner.inputDir.sqrMagnitude > 0f
-            ? Owner.SM.GetState<PlayerMove>()
-            : Owner.SM.GetState<PlayerIdle>();
+        if (_knockbackVelocity.sqrMagnitude < 0.01f)
+            return Owner.SM.GetState<PlayerIdle>();
+        return null;
+    }
+    public override void OnExit()
+    {
     }
 }

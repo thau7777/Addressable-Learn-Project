@@ -10,7 +10,6 @@ public interface IWeapon
 }
 public abstract class Weapon : MonoBehaviour, IWeapon
 {
-    public Quaternion rotationOffset; // set trong Inspector per weapon
     public WeaponData WeaponData { get; private set; }
 
     private float _attackRateElapsedTime;
@@ -45,10 +44,11 @@ public abstract class Weapon : MonoBehaviour, IWeapon
         _attackRateElapsedTime += Time.deltaTime;
         _currentTarget = GetClosestEnemy();
 
-        if (_currentTarget != null && CanAttack)
+        if (_currentTarget != null)
         {
             FaceTarget(_currentTarget);
-            Attack();
+            if(CanAttack)
+                Attack();
         }
     }
 
@@ -77,7 +77,7 @@ public abstract class Weapon : MonoBehaviour, IWeapon
         Vector3 dir = target.position - transform.position;
         dir.y = 0f;
         if (dir != Vector3.zero)
-            transform.rotation = Quaternion.LookRotation(dir) * rotationOffset;
+            transform.rotation = Quaternion.LookRotation(dir);
     }
 
     protected virtual void Attack()

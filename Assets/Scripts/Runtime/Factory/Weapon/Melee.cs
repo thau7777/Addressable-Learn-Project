@@ -26,7 +26,7 @@ public class Melee : Weapon
         _weaponModel.localRotation = _originLocalRot;
 
         if (MeleeData.AttackAnim != null)
-            _currentAnim = MeleeData.AttackAnim.Play(_weaponModel, _currentTarget, _originLocalPos, _originLocalRot, 1f / WeaponData.AttackRate);
+            _currentAnim = MeleeData.AttackAnim.Play(_weaponModel, _currentTarget, _originLocalPos, MeleeData.WeaponRange, _originLocalRot, 1f / WeaponData.AttackRate);
     }
 
     public void StopAnimation()
