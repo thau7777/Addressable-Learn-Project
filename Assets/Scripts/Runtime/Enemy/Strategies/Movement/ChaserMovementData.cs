@@ -8,8 +8,7 @@ public class ChaserMovementData : MovementStrategyData
 
 public class ChaserMovement : IMovementStrategy
 {
-    // ChaserMovement
-    public void Move(EnemyController owner, Transform target)
+    public void Move(IEnemyContext owner, Transform target)
     {
         if (target == null) return;
         Vector3 dir = (target.position - owner.transform.position).normalized;

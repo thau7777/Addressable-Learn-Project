@@ -1,16 +1,18 @@
-﻿using System;
 using UnityEngine;
 
 public interface IWeapon
 {
-    public WeaponData WeaponData { get; set; }
+    WeaponData WeaponData { get; }
+    Transform Transform { get; }
     void OnEquip(Transform user, Vector3 localPosition);
     void OnUnequip();
-    bool IsEquals(WeaponData data);
+    bool IsEquippedWith(WeaponData data);
 }
+
 public abstract class Weapon : MonoBehaviour, IWeapon
 {
     public WeaponData WeaponData { get; private set; }
+    public Transform Transform => transform;
 
     private float _attackRateElapsedTime;
     private bool CanAttack => _attackRateElapsedTime >= 1f / WeaponData.AttackRate;
@@ -18,10 +20,7 @@ public abstract class Weapon : MonoBehaviour, IWeapon
     private Transform _user;
     protected Transform _currentTarget;
     private int _enemyLayerMask;
-    private readonly Collider[] _overlapResults = new Collider[20]; // non-alloc, tránh GC
-
-    WeaponData IWeapon.WeaponData { get => WeaponData; set => WeaponData = value; }
-    private event Action OnAttack;
+    private readonly Collider[] _overlapResults = new Collider[20];
 
     public virtual void SetWeaponData(WeaponData data) => WeaponData = data;
 
@@ -39,7 +38,7 @@ public abstract class Weapon : MonoBehaviour, IWeapon
         _currentTarget = null;
     }
 
-    public virtual void Update()
+    private void Update()
     {
         _attackRateElapsedTime += Time.deltaTime;
         _currentTarget = GetClosestEnemy();
@@ -47,10 +46,14 @@ public abstract class Weapon : MonoBehaviour, IWeapon
         if (_currentTarget != null)
         {
             FaceTarget(_currentTarget);
-            if(CanAttack)
+            if (CanAttack)
                 Attack();
         }
+
+        OnUpdate();
     }
+
+    protected virtual void OnUpdate() { }
 
     private Transform GetClosestEnemy()
     {
@@ -83,8 +86,7 @@ public abstract class Weapon : MonoBehaviour, IWeapon
     protected virtual void Attack()
     {
         _attackRateElapsedTime = 0f;
-        OnAttack?.Invoke();
     }
 
-    public bool IsEquals(WeaponData data) => WeaponData == data;
+    public bool IsEquippedWith(WeaponData data) => WeaponData == data;
 }

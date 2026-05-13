@@ -1,12 +1,8 @@
-﻿using Unity.VisualScripting;
 using UnityEngine;
-using static UnityEngine.UI.GridLayoutGroup;
 
 public class EnemyDie : State<EnemyController>
 {
-    public EnemyDie(EnemyController owner) : base(owner)
-    {
-    }
+    public EnemyDie(EnemyController owner) : base(owner) { }
 
     public override void OnEnter()
     {
@@ -20,9 +16,8 @@ public class EnemyDie : State<EnemyController>
         if (Owner.Data.splitsOnDeath)
             SpawnSplits();
 
-        // Raise event cho các system khác (AudioManager, ScoreManager...)
-        //EventBus.Raise(new EnemyDeadEvent(Owner));
-        Object.Destroy(Owner.gameObject, 0.1f); // nhường frame cho fracture spawn
+        // EventBus<EnemyDeadEvent>.Raise(new EnemyDeadEvent(Owner));
+        Owner.ReturnToPool();
     }
 
     public override void Tick() { }
@@ -31,8 +26,10 @@ public class EnemyDie : State<EnemyController>
 
     private void SpawnFracture()
     {
-        if (Owner.Data.fracturePrefab == null) return;
-        Object.Instantiate(Owner.Data.fracturePrefab, Owner.transform.position, Owner.transform.rotation);
+        if (Owner.Data.fractureSettings == null) return;
+        var fracture = FlyweightFactory.Spawn(Owner.Data.fractureSettings);
+        if (fracture == null) return;
+        fracture.FlyweightInit(Owner.transform.position, Owner.transform.rotation);
     }
 
     private void SpawnJuicePuddle()
@@ -47,12 +44,15 @@ public class EnemyDie : State<EnemyController>
 
     private void SpawnSplits()
     {
-        if (Owner.Data.splitPrefab == null) return;
+        if (Owner.Data.splitEnemyData == null) return;
         for (int i = 0; i < Owner.Data.splitCount; i++)
         {
             Vector3 offset = Random.insideUnitSphere * 0.5f;
             offset.y = 0f;
-            Object.Instantiate(Owner.Data.splitPrefab, Owner.transform.position + offset, Quaternion.identity);
+            var splitEnemy = FlyweightFactory.Spawn(Owner.Data.splitEnemyData) as EnemyController;
+            if (splitEnemy == null) continue;
+            splitEnemy.FlyweightInit(Owner.transform.position + offset, Quaternion.identity);
+            splitEnemy.SetTarget(Owner.PlayerTarget);
         }
     }
 }

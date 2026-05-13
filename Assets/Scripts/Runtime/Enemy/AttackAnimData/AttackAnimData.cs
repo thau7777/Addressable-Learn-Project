@@ -1,15 +1,13 @@
-using PrimeTween;
+using System;
 using UnityEngine;
 
-// IAttackAnimation.cs
 public interface IAttackAnimation
 {
-    void Build(EnemyController owner, Transform target, System.Action onStrike, System.Action onComplete);
-    void OnInterrupt(EnemyController owner);
+    void Build(IEnemyContext owner, Transform target, Action onStrike, Action onComplete);
+    void OnInterrupt(IEnemyContext owner);
 }
 
 public abstract class AttackAnimData : ScriptableObject
 {
     public abstract IAttackAnimation Create();
 }
-

@@ -1,6 +1,5 @@
-﻿using UnityEngine;
+using UnityEngine;
 
-// RangedMovementData.cs — Pineapple (giữ khoảng cách)
 [CreateAssetMenu(menuName = "Scriptable Objects/Strategy/Movement/Ranged")]
 public class RangedMovementData : MovementStrategyData
 {
@@ -20,8 +19,7 @@ public class RangedMovement : IMovementStrategy
         _tolerance = tolerance;
     }
 
-    // RangedMovement
-    public void Move(EnemyController owner, Transform target)
+    public void Move(IEnemyContext owner, Transform target)
     {
         if (target == null) return;
         float dist = Vector3.Distance(owner.transform.position, target.position);

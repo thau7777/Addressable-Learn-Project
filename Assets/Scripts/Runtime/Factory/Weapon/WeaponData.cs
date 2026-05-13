@@ -7,7 +7,7 @@ using UnityEngine.ResourceManagement.AsyncOperations;
 public abstract class WeaponData : ScriptableObject
 {
     [TabGroup("References")]
-    public AssetReference weaponPrefabRef;
+    [Required] public AssetReference weaponPrefabRef;
     [TabGroup("References")]
     public AssetReference weaponIconRef;
 
@@ -17,15 +17,16 @@ public abstract class WeaponData : ScriptableObject
     protected float attackRate = 0.1f;
     [TabGroup("Basic Info"), SerializeField]
     protected float weaponRange = 5f;
-    public float WeaponRange => weaponRange;
 
     public GameObject WeaponPrefab { get; set; }
     public GameObject WeaponIconPrefab { get; set; }
 
     private AsyncOperationHandle<GameObject> _weaponAsyncOperationHandle;
     private AsyncOperationHandle<GameObject> _iconAsyncOperationHandle;
+
     public bool IsAutomatic => isAutomatic;
-    public float AttackRate => attackRate; // expose cho Weapon d�ng
+    public float AttackRate => attackRate;
+    public float WeaponRange => weaponRange;
 
     public virtual async UniTask LoadWeaponAssetsAsync()
     {
@@ -46,8 +47,6 @@ public abstract class WeaponData : ScriptableObject
         }
     }
 
-    
-
     public virtual void UnloadWeaponAssets()
     {
         if (_weaponAsyncOperationHandle.IsValid())
@@ -62,5 +61,4 @@ public abstract class WeaponData : ScriptableObject
             WeaponIconPrefab = null;
         }
     }
-
 }

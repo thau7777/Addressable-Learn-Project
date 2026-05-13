@@ -1,6 +1,5 @@
 using UnityEngine;
 
-// ZigzagMovementData.cs — Banana
 [CreateAssetMenu(menuName = "Scriptable Objects/Strategy/Movement/Zigzag")]
 public class ZigzagMovementData : MovementStrategyData
 {
@@ -21,7 +20,7 @@ public class ZigzagMovement : IMovementStrategy
         _amplitude = amplitude;
     }
 
-    public void Move(EnemyController owner, Transform target)
+    public void Move(IEnemyContext owner, Transform target)
     {
         if (target == null) return;
         _timer += Time.fixedDeltaTime;

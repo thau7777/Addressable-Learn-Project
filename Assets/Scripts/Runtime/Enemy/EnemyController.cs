@@ -1,7 +1,7 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 [RequireComponent(typeof(Rigidbody))]
-public class EnemyController : Flyweight, IDamageable
+public class EnemyController : Flyweight, /*IDamageable,*/ IEnemyContext
 {
     public Transform VisualRoot { get; private set; }
     public Vector3 VrOgScale { get; private set; }
@@ -22,13 +22,14 @@ public class EnemyController : Flyweight, IDamageable
         VrOgScale = VisualRoot.localScale;
         VrOgRotation = VisualRoot.localRotation;
         Rb = GetComponent<Rigidbody>();
-        Rb.isKinematic = true;           // thêm
+        Rb.isKinematic = true;
         Rb.interpolation = RigidbodyInterpolation.Interpolate;
         Rb.useGravity = false;
-        Rb.constraints = RigidbodyConstraints.FreezeRotationX  // dòng 2 đang overwrite dòng 1
+        Rb.constraints = RigidbodyConstraints.FreezeRotationX
                        | RigidbodyConstraints.FreezeRotationZ
                        | RigidbodyConstraints.FreezePositionY;
     }
+
     public void EnemyInit(EnemyData data, IMovementStrategy movementStrategy, IAttackStrategy attackStrategy)
     {
         Data = data;
@@ -43,14 +44,21 @@ public class EnemyController : Flyweight, IDamageable
         SM.RegisterState(new EnemyDie(this));
         SM.Init<EnemySpawn>();
     }
+
     public void ResetEnemy()
     {
         CurrentHP = Data.maxHP;
         IsDead = false;
+        GetComponent<Collider>().enabled = true;
         SM.ForceTransition<EnemySpawn>();
     }
 
-    private void Update() => SM.Tick();
+    private void Update()
+    {
+        AttackStrategy?.Tick(Time.deltaTime);
+        SM.Tick();
+    }
+
     private void FixedUpdate() => SM.FixedTick();
 
     public void RotateToPlayer()
@@ -59,13 +67,10 @@ public class EnemyController : Flyweight, IDamageable
         Vector3 dir = PlayerTarget.position - transform.position;
         dir.y = 0;
         dir = dir.normalized;
-
         Quaternion targetRotation = Quaternion.LookRotation(dir);
         transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * 100f);
     }
 
-
-    // Gọi từ Spawner để inject player thay vì FindGameObject
     public void SetTarget(Transform target) => PlayerTarget = target;
 
     public void TakeDamage(float amount)

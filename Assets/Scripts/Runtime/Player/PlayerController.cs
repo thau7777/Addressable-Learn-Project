@@ -10,7 +10,7 @@ public class PlayerController : MonoBehaviour
 
     public Rigidbody Rb { get; private set; }
     public float MoveSpeed => _moveSpeed;
-    [HideInInspector] public Vector3 inputDir;
+    public Vector3 InputDir { get; private set; }
     public Vector3 PendingKnockback { get; private set; }
     public StateMachine SM { get; private set; }
 
@@ -43,9 +43,7 @@ public class PlayerController : MonoBehaviour
     #region Inputs
     private void OnMove(Vector2 dir)
     {
-        inputDir.x = dir.x;
-        inputDir.z = dir.y;
-        inputDir = inputDir.normalized;
+        InputDir = new Vector3(dir.x, 0f, dir.y).normalized;
     }
     #endregion
 

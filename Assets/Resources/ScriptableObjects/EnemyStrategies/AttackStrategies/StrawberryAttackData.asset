@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4335d9b869300146bb7e3d442d01511, type: 3}
   m_Name: StrawberryAttackData
   m_EditorClassIdentifier: Assembly-CSharp::StandardMeleeAttackData
-  attackRange: 1.4
+  attackRange: 2
   damage: 10
   cooldown: 1
   animData: {fileID: 11400000, guid: a2c621e92c9cdb24eaddb211e2c04446, type: 2}

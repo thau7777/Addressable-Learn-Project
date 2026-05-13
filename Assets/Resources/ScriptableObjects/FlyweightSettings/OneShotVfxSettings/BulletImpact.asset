@@ -9,20 +9,22 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 36b6e7734271f9747a96f5c42df10a0d, type: 3}
-  m_Name: Bullet
-  m_EditorClassIdentifier: Assembly-CSharp::StraightProjectileSettings
+  m_Script: {fileID: 11500000, guid: 3bfe82fd6cd0d3c4e9b1cd12e524dda9, type: 3}
+  m_Name: BulletImpact
+  m_EditorClassIdentifier: Game.Factory::OneShotVfxSettings
   collectionCheck: 1
   defaultCapacity: 20
   maxPoolSize: 50
   prefabRef:
-    m_AssetGUID: 3f503c3d7f4462742a1fe68a0112a91e
+    m_AssetGUID: f92d4e6c2f6b64945b5c597adf747f2a
     m_SubObjectName: 
     m_SubObjectType: 
     m_SubObjectGUID: 
     m_EditorAssetChanged: 0
-  collisionLayers:
+  dealsDamage: 0
+  baseDamage: 0
+  hitboxLayers:
     serializedVersion: 2
-    m_Bits: 129
-  dealsDamage: 1
-  onImpactVfx: {fileID: 11400000, guid: 7fb2c54df9e057343ac5b65e01319397, type: 2}
+    m_Bits: 0
+  hitboxActivateDelay: 0
+  hitboxActiveDuration: 0

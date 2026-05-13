@@ -15,7 +15,7 @@ public abstract class FlyweightSettings : ScriptableObject
     public int maxPoolSize = 100;
 
     [TabGroup("Flyweight Info")]
-    public AssetReference prefabRef;
+    [Required] public AssetReference prefabRef;
     public GameObject Prefab { get; set; }
     private AsyncOperationHandle<GameObject> _prefabHandle;
     public abstract Flyweight Create();

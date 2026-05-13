@@ -6,6 +6,7 @@ public class StraightProjectile : Projectile
     private StraightProjectileSettings StraightProjectileSettings => settings as StraightProjectileSettings;
     private Rigidbody _rb;
     private float _currentDistance;
+
     protected override void Awake()
     {
         base.Awake();
@@ -13,41 +14,50 @@ public class StraightProjectile : Projectile
         _rb.linearDamping = 0;
         _rb.angularDamping = 0;
         _rb.interpolation = RigidbodyInterpolation.None;
-        _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic; // Better collision detection for fast-moving objects
-        _rb.useGravity = false; // No gravity for straight projectiles
-        _rb.constraints = RigidbodyConstraints.FreezeRotation; // Prevent rotation for a straight projectile
+        _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        _rb.useGravity = false;
+        _rb.constraints = RigidbodyConstraints.FreezeRotation;
         _currentDistance = 0;
     }
-    public override void ShootProjectile(Vector3 startPos, Vector3 targetPos, GunData gunData)
+
+    protected override void Despawn()
     {
-        //_trail.Begin();
-        _gunData = gunData;
+        _rb.linearVelocity = Vector3.zero;
+        base.Despawn();
+    }
+
+    public override void ShootProjectile(Vector3 startPos, Vector3 targetPos, IProjectileLaunchData launchData)
+    {
+        if (_collider != null) _collider.enabled = true;
+        _launchData = launchData;
         Vector3 direction = (targetPos - startPos).normalized;
         Quaternion rot = Quaternion.LookRotation(direction);
 
         _rb.position = startPos;
         _rb.rotation = rot;
-        _rb.linearVelocity = direction * _gunData.BulletSpeed;
+        _rb.linearVelocity = direction * _launchData.BulletSpeed;
         _currentDistance = 0;
         _isInitialized = true;
 
         ResetTrail();
     }
+
     private void FixedUpdate()
     {
         if (!_isInitialized) return;
         _currentDistance += _rb.linearVelocity.magnitude * Time.fixedDeltaTime;
-        if (_currentDistance >= _gunData.WeaponRange)
+        if (_currentDistance >= _launchData.WeaponRange)
         {
             Despawn();
+            SpawnImpactVfx();
         }
     }
 
-
     protected override void OnTriggerEnter(Collider other)
     {
-        if((StraightProjectileSettings.collisionLayers.value & (1 << other.gameObject.layer)) == 0) return; // Ignore collision with player
-        base.OnTriggerEnter(other);
+        if ((StraightProjectileSettings.collisionLayers.value & (1 << other.gameObject.layer)) == 0) return;
+        OnHit(other);
+        SpawnImpactVfx();
         Despawn();
     }
 }

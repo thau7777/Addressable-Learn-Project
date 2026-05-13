@@ -15,16 +15,17 @@ StateMachine/     — Generic state machine (Tick + FixedTick)
 InputSystem/      — Input reader (ScriptableObject-based)
 HitboxStuff/      — IDamageable interface
 Factory/
-  Flyweight/      — Object pool core + Projectile types
+  Flyweight/      — Object pool core + Projectile types + OneShotVfx
   Weapon/
     AttackAnimation/ — WeaponAttackAnimSO (abstract) + StabAttackAnimSO + SwingAttackAnimSO
     WeaponFactory, Weapon, Gun, Melee, WeaponData, GunData, MeleeData
 Enemy/
-  States/         — Enemy state machine states
+  IEnemyContext.cs — minimal context interface passed to all strategies
+  States/          — Enemy state machine states
   Strategies/
-    Movement/     — IMovementStrategy + data ScriptableObjects
-    Attack/       — IAttackStrategy + data ScriptableObjects
-  AttackAnimData/ — IAttackAnimation + data ScriptableObjects
+    Movement/      — IMovementStrategy + data ScriptableObjects
+    Attack/        — IAttackStrategy + data ScriptableObjects
+  AttackAnimData/  — IAttackAnimation + data ScriptableObjects
 Player/
   PlayerStates/   — Player state machine states (Idle/Move/Hurt)
 Managers/
@@ -52,7 +53,11 @@ Helpers/          — Static helpers + extension methods
 - `Flyweight` (abstract MB) — base for anything pooled; calls `ReturnToPool()`
 - `FlyweightFactory` — single pool dictionary keyed by settings asset
 
-**Extends to:** Projectiles, Enemies, attack VFX — anything spawned frequently.
+**Extends to:** Projectiles, Enemies, OneShotVfx — anything spawned frequently.
+
+**OneShotVfx subsystem:**
+- `OneShotVfxSettings` (SO) — `dealsDamage`, `baseDamage`, `hitboxLayers`, `hitboxActivateDelay`, `hitboxActiveDuration`; overrides `OnGet` to skip `SetActive` — caller must `FlyweightInit` + `OneShotVfxInit()` after getting from pool
+- `OneShotVfx` (MB : Flyweight) — plays `ParticleSystem` or `VisualEffect` (behind `#if UNITY_VFX_GRAPH`) on init; coroutine manages hitbox on/off window; auto-returns to pool when effect ends; `OnTriggerEnter` applies `_currentDamage` to `IDamageable`
 
 ---
 
@@ -60,39 +65,48 @@ Helpers/          — Static helpers + extension methods
 **Hierarchy:**
 ```
 WeaponData (abstract SO)
-  ├── GunData      → Gun (Weapon)    — ammo/reload, recoil animation on shoot
-  └── MeleeData    → Melee (Weapon)  — AttackAnim : WeaponAttackAnimSO
+  ├── GunData      → Gun (Weapon, IProjectileLaunchData) — ammo/reload, recoil animation on shoot
+  └── MeleeData    → Melee (Weapon)                      — AttackAnim : WeaponAttackAnimSO
 
 Weapon (abstract MB) implements IWeapon
   ├── Gun          — fires Projectiles, tracks ammo/reload, PrimeTween recoil on attack
   └── Melee        — plays WeaponAttackAnimSO on attack (stab or swing)
 
 WeaponAttackAnimSO (abstract SO)
-  ├── StabAttackAnimSO   — translates _weaponModel along local Z (stabPos = origin + forward * range) then returns
-  └── SwingAttackAnimSO  — lunge toward target (flat XZ, distance-clamped) + X-axis rotation, durations scaled by attackInterval
+  ├── StabAttackAnimSO   — translates _weaponModel along local Z
+  └── SwingAttackAnimSO  — lunge toward target (flat XZ) + rotation swing
 ```
 
-**Auto-targeting:** `Weapon.Update()` calls `Physics.OverlapSphereNonAlloc` each frame (non-alloc, 20-slot buffer, Enemy layer mask) to find the closest enemy. When a target is in range, `FaceTarget()` rotates the weapon (XZ-flat look) and `Attack()` fires automatically. No player input required — weapons are autonomous agents.
+**`IWeapon` contract:**
+```csharp
+WeaponData WeaponData { get; }      // getter only — no setter
+Transform Transform { get; }        // avoids downcasting to MonoBehaviour
+void OnEquip(Transform user, Vector3 localPosition);
+void OnUnequip();
+bool IsEquippedWith(WeaponData data);
+```
 
-**Attack rate:** `CanAttack` gates attack on elapsed time ≥ `1f / AttackRate`. On equip, `_attackRateElapsedTime` is pre-charged to the full interval so the weapon fires immediately.
+**Auto-targeting:** `Weapon.Update()` is sealed (not virtual). It calls `Physics.OverlapSphereNonAlloc` each frame (non-alloc, 20-slot buffer, Enemy layer mask) to find the closest enemy. When a target is in range, `FaceTarget()` rotates the weapon and `Attack()` fires automatically. Subclasses extend per-frame logic via `protected virtual void OnUpdate()` (Template Method).
 
-**Gun specifics (`GunData`):**
+**Attack rate:** `CanAttack` gates on elapsed time ≥ `1f / AttackRate`. On equip, pre-charged to full interval so weapon fires immediately.
+
+**Gun specifics (`GunData` / `Gun`):**
+- `GunData` is **immutable at runtime** — `BaseBulletDamage` is the SO base value. Never mutate SO fields directly.
+- `Gun` holds `_runtimeBulletDamage` (copied from `BaseBulletDamage` in `SetWeaponData`). Damage buffs call `Gun.ModifyDamage(delta)` on the instance.
+- `Gun` implements `IProjectileLaunchData` (explicit) — passes `this` to `Projectile.ShootProjectile`, so the projectile always reads the runtime damage, not the SO.
 - Ammo: `AmmoPerMagazine`, `MagazineCapacity`, `ReloadTime`
-- Ballistics: `BulletSpeed`, `BulletDamage`
-- Spread curves: `SpreadOnShoot`, `ReturnDuration`, `MaxSpreadThreshold`, `SpreadDuration`, `SpreadCurve`, `ReturnCurve` (data defined, not yet consumed by Gun)
-- Recoil: `RecoilDistance`, `RecoilDuration`, `RecoilReturnDuration`, `RecoilEase`, `RecoilReturnEase` — `_weaponModel` pushed backward then returned via PrimeTween `Sequence`
+- Recoil: `RecoilDistance/Duration/ReturnDuration/Ease` — `_weaponModel` pushed backward then returned via PrimeTween `Sequence`
 
 **Melee specifics:**
-- `Melee.Attack()` passes `_currentTarget` to `AttackAnim.Play()` so animations can orient toward the enemy
-- `StopAnimation()` / `OnUnequip()` snap the model back to `_originLocalPos`/`_originLocalRot`
+- `Melee.Attack()` passes `_currentTarget` to `AttackAnim.Play()` so animations orient toward the enemy
+- `StopAnimation()` / `OnUnequip()` snap the model back to origin
 
 **`WeaponAttackAnimSO.Play` signature:**  
-`Play(Transform weaponModel, Transform target, Vector3 originLocalPos, float range, Quaternion originLocalRot, float attackInterval)`  
-All concrete implementations scale their tween durations by `attackInterval` (= `1f / AttackRate`).
+`Play(Transform weaponModel, Transform target, Vector3 originLocalPos, float range, Quaternion originLocalRot, float attackInterval)`
 
 **Factory:** `WeaponFactory` (Singleton) — `GetWeapon(WeaponData)` instantiates from `data.WeaponPrefab`.  
-**Equip system:** `WeaponManager` (Singleton) — owns `List<IWeapon>`, orbits weapons around player at `_weaponOrbitRadius`. `RefreshWeaponPositions()` recalculates all slots after any equip/unequip. Initialized by `PlayerController.Awake()`.  
-**Assets:** `WeaponData.LoadWeaponAssetsAsync()` loads prefab + icon via Addressables. `GunData` override also loads `projectileSettings.LoadPrefabAsync()`.
+**Equip system:** `WeaponManager` (Singleton) — owns `List<IWeapon>`, accesses transforms via `IWeapon.Transform` (no downcasting). Orbits weapons around player at `_weaponOrbitRadius`. `RefreshWeaponPositions()` recalculates all slots after equip/unequip. Initialized by `PlayerController.Awake()`.  
+**Assets:** `WeaponData.LoadWeaponAssetsAsync()` loads prefab + icon via Addressables. `GunData` override also loads `projectileSettings.LoadPrefabAsync()` and the impact VFX prefab.
 
 **OCP compliance:** New weapon type = new `WeaponData` subclass + new `Weapon` subclass. New melee anim = new `WeaponAttackAnimSO` subclass. No existing code changes.
 
@@ -101,46 +115,79 @@ All concrete implementations scale their tween durations by `attackInterval` (= 
 ### 3. Projectile System
 **Hierarchy:**
 ```
+IProjectileLaunchData (interface)
+  — BulletSpeed, BulletDamage, WeaponRange
+  — implemented by Gun (explicit, using _runtimeBulletDamage)
+
 ProjectileSettings (abstract SO) : FlyweightSettings
+  + dealsDamage: bool
+  + onImpactVfx: OneShotVfxSettings (optional)
   └── StraightProjectileSettings  → StraightProjectile (Projectile)
-                                     + collisionLayers: LayerMask (filters OnTriggerEnter)
+                                     + collisionLayers: LayerMask
 
 Projectile (abstract MB) : Flyweight
-  └── StraightProjectile          — Rigidbody-driven, distance-limited, ContinuousDynamic collision
+  + ShootProjectile(startPos, targetPos, IProjectileLaunchData) — decoupled from GunData
+  + OnHit(Collider) — deals damage via IDamageable + spawns onImpactVfx
+  └── StraightProjectile — Rigidbody-driven, distance-limited, ContinuousDynamic collision
 ```
 
-**Trail management:** `Projectile` owns a `TrailRenderer`. `OnDisable` clears + disables the trail (prevents teleport artifact). `ResetTrail()` re-enables it on fire. `StraightProjectile.ShootProjectile()` calls `ResetTrail()` after positioning.
+**Key design:** `Projectile` takes `IProjectileLaunchData` — not `GunData`. Any system (turret, trap, enemy) can fire projectiles by implementing the interface.
 
-**Spawn:** `GunData.projectileSettings` → `FlyweightFactory.Spawn()` → `ShootProjectile(tip.position, tip.position + tip.forward, gunData)`  
-**Despawn:** `StraightProjectile.OnTriggerEnter` filters by `collisionLayers` bitmask; on match or max distance → `Despawn()` → `ReturnToPool()`
+**Trail management:** `Projectile` owns a `TrailRenderer`. `OnDisable` clears + disables the trail. `ResetTrail()` re-enables it on fire.
+
+**Spawn:** `GunData.projectileSettings` → `FlyweightFactory.Spawn()` → `ShootProjectile(tip.position, tip.position + tip.forward, this)` where `this` is the `Gun`.  
+**Despawn:** `StraightProjectile.OnTriggerEnter` filters by `collisionLayers`; on match or max distance → `Despawn()` → trail fade coroutine → `ReturnToPool()`.
 
 ---
 
 ### 4. Enemy System
-**Controller:** `EnemyController : Flyweight, IDamageable`  
-**Data:** `EnemyData : FlyweightSettings` — holds HP, speed, strategy SOs, split/fracture prefabs  
+**Controller:** `EnemyController : Flyweight, IDamageable, IEnemyContext`  
+**Data:** `EnemyData : FlyweightSettings` — holds HP, speed, strategy SOs, fracture/split settings  
 **Init flow:** `EnemyData.Create()` → `EnemyController.EnemyInit(data, movementStrategy, attackStrategy)`
 
-**State machine:** Spawn → Idle → Move → Attack → Die  
-**Strategies (Strategy Pattern):**
-- `IMovementStrategy` — `Move(owner, target)` — Chaser, Ranged, Zigzag
-- `IAttackStrategy` — `StartAttack / Interrupt / IsReady` — StandardMeleeAttack
-- `IAttackAnimation` — `Build / OnInterrupt` — StandardMeleeAnim
+**`IEnemyContext` interface** (in `Enemy/IEnemyContext.cs`):
+```csharp
+Transform transform { get; }
+Rigidbody Rb { get; }
+Transform VisualRoot { get; }
+Vector3 VrOgScale { get; }
+Quaternion VrOgRotation { get; }
+EnemyData Data { get; }
+```
+All strategies and animations take `IEnemyContext` instead of `EnemyController`. Adding a `BossController` only requires implementing this interface — no strategy code changes.
 
-**OCP compliance:** New enemy behavior = new strategy SO + strategy class. EnemyController untouched.
+**State machine:** Spawn → Idle → Move → Attack → Die  
+**`EnemyController.Update()`** ticks `AttackStrategy.Tick(dt)` before `SM.Tick()` so cooldown timers always advance.
+
+**On death:** `EnemyDie.OnEnter()` calls `Owner.ReturnToPool()` — the enemy is returned to the pool, NOT destroyed. `ResetEnemy()` re-enables the collider and resets HP/state for the next spawn. Fracture and split spawns use `FlyweightFactory.Spawn()`.
+
+**Death spawn assets (`EnemyData`):**
+- `fractureSettings: FlyweightSettings` — VFX or rigid-body fracture effect; spawned via pool on death
+- `splitEnemyData: EnemyData` — enemy type to spawn on split death; spawned via pool with `SetTarget` forwarded
+- `EnemyData.LoadPrefabAsync()` is overridden to also load `fractureSettings` and `splitEnemyData` prefabs
+
+**Strategies (Strategy Pattern):**
+
+| Interface | Method signature | Notes |
+|---|---|---|
+| `IMovementStrategy` | `Move(IEnemyContext, Transform target)` | Chaser, Ranged, Zigzag |
+| `IAttackStrategy` | `Tick(float dt)` / `StartAttack(IEnemyContext, Transform, Action)` / `Interrupt(IEnemyContext)` | `Tick` must be called each frame; `IsReady` gates re-attack |
+| `IAttackAnimation` | `Build(IEnemyContext, Transform, Action onStrike, Action onComplete)` / `OnInterrupt(IEnemyContext)` | StandardMeleeAnim |
+
+**OCP compliance:** New enemy behavior = new strategy SO + strategy class. `EnemyController` untouched.
 
 ---
 
 ### 5. State Machine
 **Generic:** `StateMachine` + `IState` + `State<TOwner>`  
 **`IState` contract:** `OnEnter`, `Tick`, `FixedTick`, `GetTransition` (null = stay), `OnExit`  
-**`State<TOwner>`:** `FixedTick()` is virtual (no-op default) — override only when physics is needed.  
-**StateMachine:** `Tick()` checks `GetTransition()` first, then calls `Current.Tick()`. `FixedTick()` delegates directly to current state. `ForceTransition<T>()` and `ForceTransition(IState)` for imperative transitions.
+**`StateMachine.Tick()`:** calls `GetTransition()` first — if non-null, transitions; otherwise calls `Current.Tick()`. Tick is skipped on the transition frame (by design).  
+**`ForceTransition<T>()`** and `ForceTransition(IState)` for imperative transitions.
 
 **Used by:**
 - `PlayerController` — `Update()` → `SM.Tick()`, `FixedUpdate()` → `SM.FixedTick()`
-  - `PlayerIdle` / `PlayerMove` — movement physics in `PlayerMove.FixedTick()` via `Rb.MovePosition`
-  - `PlayerHurt` — applies `PendingKnockback`, triggered via `SM.ForceTransition<PlayerHurt>()`
+  - `PlayerIdle` / `PlayerMove` — reads `PlayerController.InputDir` (read-only property, set via `OnMove`)
+  - `PlayerHurt` — applies `PendingKnockback` decay via `FixedTick`
 - `EnemyController` — Spawn/Idle/Move/Attack/Die
 
 ---
@@ -166,7 +213,9 @@ Currently only Move is mapped. Input action map switching supported.
 **Concrete commands:**
 - `EquipWeaponBuffSO` — calls `LoadWeaponAssetsAsync()` (async), then `WeaponManager.EquipWeapon`. `Remove()` calls `UnequipWeapon`.
 
-**OCP compliance:** New buff type = new `BuffSO` subclass in the appropriate `Buff/<Category>/` folder. No `BuffManager` changes.
+**Damage buffs (future):** call `Gun.ModifyDamage(delta)` on the weapon instance — never mutate `GunData` SO fields.
+
+**OCP compliance:** New buff type = new `BuffSO` subclass. No `BuffManager` changes.
 
 ---
 
@@ -193,11 +242,13 @@ Currently only Move is mapped. Input action map switching supported.
 ## Key Interfaces
 | Interface | Purpose |
 |---|---|
-| `IWeapon` | Equip/unequip contract for all weapons |
+| `IWeapon` | `WeaponData`, `Transform`, equip/unequip contract — no downcasting required |
+| `IProjectileLaunchData` | `BulletSpeed`, `BulletDamage`, `WeaponRange` — implemented by `Gun`; decouples projectiles from weapon types |
+| `IEnemyContext` | Minimal context passed to all enemy strategies — `transform`, `Rb`, `VisualRoot`, `VrOgScale`, `VrOgRotation`, `Data` |
 | `IDamageable` | `TakeDamage(float)` — implemented by EnemyController |
-| `IMovementStrategy` | `Move(owner, target)` — pluggable enemy movement |
-| `IAttackStrategy` | `StartAttack / Interrupt / IsReady` — pluggable enemy attack |
-| `IAttackAnimation` | `Build / OnInterrupt` — pluggable attack animation |
+| `IMovementStrategy` | `Move(IEnemyContext, Transform)` — pluggable enemy movement |
+| `IAttackStrategy` | `Tick(float dt)` / `StartAttack` / `Interrupt` / `IsReady` — pluggable enemy attack with cooldown |
+| `IAttackAnimation` | `Build(IEnemyContext, ...)` / `OnInterrupt(IEnemyContext)` — pluggable attack animation |
 | `IState` | State machine contract (`OnEnter/Tick/FixedTick/GetTransition/OnExit`) |
 | `IEvent` | Marker for event bus events |
 
@@ -208,14 +259,14 @@ Currently only Move is mapped. Input action map switching supported.
 |---|---|
 | Addressables | Weapon prefabs, weapon icons, Flyweight prefabs |
 | UniTask | Async asset loading (`LoadPrefabAsync`, `LoadWeaponAssetsAsync`) |
-| PrimeTween | Melee attack animations, gun recoil, enemy spawn/idle tweens |
+| PrimeTween | Melee attack animations, gun recoil, enemy spawn/idle/attack tweens |
 | Unity Input System | Player input via generated `MyInputActions` |
 
 ---
 
-## SOLID Scorecard (current state)
-- **S** — Good. Each class has a clear responsibility.
-- **O** — Good. Weapons, enemies, strategies, attack anims, and buffs all extend via new subclasses.
-- **L** — Good. `Gun`/`Melee` are substitutable as `IWeapon`; strategies are substitutable.
-- **I** — Good. Interfaces are small and focused. `IState` now includes `FixedTick` — still cohesive.
-- **D** — Mostly good. `Weapon` base depends on `WeaponData` (concrete SO) — acceptable Unity tradeoff. `Gun` and `Melee` downcast to their typed data internally.
+## SOLID Scorecard
+- **S** — Good. Each class has a single reason to change. `GunData` is now purely data (no mutation methods).
+- **O** — Good. Weapons, enemies, strategies, attack anims, buffs, and projectile launchers all extend via new subclasses/implementations.
+- **L** — Good. `Gun`/`Melee` are substitutable as `IWeapon`; all strategies substitutable via `IMovementStrategy`/`IAttackStrategy`/`IAttackAnimation`; `Gun` substitutable as `IProjectileLaunchData`.
+- **I** — Good. `IWeapon`, `IProjectileLaunchData`, `IEnemyContext` are small and focused. No fat interfaces.
+- **D** — Good. `WeaponManager` depends on `IWeapon` (not `Weapon`). Strategies depend on `IEnemyContext` (not `EnemyController`). `Projectile` depends on `IProjectileLaunchData` (not `GunData`). Remaining concrete dependency: `Weapon` base on `WeaponData` SO — acceptable Unity tradeoff.

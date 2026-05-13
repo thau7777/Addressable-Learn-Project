@@ -1,7 +1,7 @@
 using PrimeTween;
 using UnityEngine;
 
-public class Gun : Weapon
+public class Gun : Weapon, IProjectileLaunchData
 {
     [SerializeField] private Transform _tip;
     [SerializeField] private Transform _weaponModel;
@@ -11,6 +11,12 @@ public class Gun : Weapon
     private uint _maxAmmo;
     private Vector3 _originLocalPos;
     private Sequence _recoilSequence;
+    private float _runtimeBulletDamage;
+
+    // IProjectileLaunchData — uses runtime damage so buffs affect the instance, not the shared SO
+    float IProjectileLaunchData.BulletSpeed => GunData.BulletSpeed;
+    float IProjectileLaunchData.BulletDamage => _runtimeBulletDamage;
+    float IProjectileLaunchData.WeaponRange => WeaponData.WeaponRange;
 
     private void Awake()
     {
@@ -22,18 +28,19 @@ public class Gun : Weapon
         base.SetWeaponData(data);
         _maxAmmo = GunData.AmmoPerMagazine;
         _currentAmmo = _maxAmmo;
+        _runtimeBulletDamage = GunData.BaseBulletDamage;
     }
 
+    public void ModifyDamage(float delta) => _runtimeBulletDamage += delta;
 
     protected override void Attack()
     {
         if (_currentAmmo <= 0) { Reload(); return; }
 
         Vector3 targetPos = _tip.position + _tip.forward;
-
         Projectile projectile = FlyweightFactory.Spawn(GunData.projectileSettings) as Projectile;
         projectile.FlyweightInit(_tip.position, Quaternion.LookRotation(_tip.forward));
-        projectile.ShootProjectile(_tip.position, targetPos, GunData);
+        projectile.ShootProjectile(_tip.position, targetPos, this);
         _currentAmmo--;
 
         base.Attack();
@@ -64,6 +71,6 @@ public class Gun : Weapon
     {
         if (_currentAmmo == _maxAmmo) return;
         _currentAmmo = _maxAmmo;
-        Debug.Log("Gun Reloaded");
+        // TODO: play reload sound/animation
     }
 }

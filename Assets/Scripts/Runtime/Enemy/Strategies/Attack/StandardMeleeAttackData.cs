@@ -1,11 +1,10 @@
-using PrimeTween;
+using System;
 using UnityEngine;
 
 [CreateAssetMenu(menuName = "Scriptable Objects/Strategy/Attack/StandardMeleeAttackData")]
 public class StandardMeleeAttackData : AttackStrategyData
 {
-    public override IAttackStrategy CreateStrategy()
-        => new StandardMeleeAttack(this);
+    public override IAttackStrategy CreateStrategy() => new StandardMeleeAttack(this);
 }
 
 public class StandardMeleeAttack : IAttackStrategy
@@ -26,16 +25,16 @@ public class StandardMeleeAttack : IAttackStrategy
         if (_cooldownTimer > 0f) _cooldownTimer -= dt;
     }
 
-    private void SpawnAttackFlyweight()
+    public void StartAttack(IEnemyContext owner, Transform target, Action onComplete)
     {
-        Debug.Log($"Spawn attack flyweight dealing {AttackData.damage} damage");
+        _cooldownTimer = AttackData.cooldown;
+        _anim.Build(owner, target, SpawnAttackFlyweight, onComplete);
     }
 
-    public void StartAttack(EnemyController owner, Transform target, System.Action onComplete)
+    public void Interrupt(IEnemyContext owner) => _anim.OnInterrupt(owner);
+
+    private void SpawnAttackFlyweight()
     {
-        //onComplete += () => _cooldownTimer = AttackData.cooldown;
-        _cooldownTimer = AttackData.cooldown;
-        _anim.Build(owner, target, () => SpawnAttackFlyweight(), onComplete);
+        // TODO: spawn attack hitbox flyweight dealing AttackData.damage
     }
-    public void Interrupt(EnemyController owner) => _anim.OnInterrupt(owner);
 }

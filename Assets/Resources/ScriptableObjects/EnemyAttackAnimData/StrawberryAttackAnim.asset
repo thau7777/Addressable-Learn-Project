@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: afc826895183e2440ad7310b207c446e, type: 3}
   m_Name: StrawberryAttackAnim
   m_EditorClassIdentifier: Assembly-CSharp::StandardMeleeAnimData
-  windUpAngle: -15
+  windUpOffset: {x: -30, y: 0, z: 0}
   windUpDur: 0.12
-  strikeAngle: -30
+  strikeOffset: {x: 70, y: 0, z: 0}
   strikeDur: 0.1
   squashScale: {x: 1.15, y: 0.78, z: 1.15}
   impactHold: 0.08

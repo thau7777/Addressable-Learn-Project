@@ -50,6 +50,11 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f92d4e6c2f6b64945b5c597adf747f2a
+    m_Address: Assets/Resources_moved/Prefabs/Impact/BulletImpact.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 4e1d2329341e1e648bd1e58f80e06dd0, type: 2}
   m_SchemaSet:

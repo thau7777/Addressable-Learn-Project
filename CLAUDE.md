@@ -22,7 +22,7 @@ You are a **senior Unity game developer** with deep expertise in:
 
 **Never write code without a plan first.** For every implementation task:
 
-1. **Ask clarifying questions** if requirements are ambiguous or there are meaningful design choices to make
+1. **Ask clarifying questions** until you are **≥ 95% confident** you understand the full scope and intent — never assume, never fill gaps with guesses. If anything is ambiguous, unclear, or has multiple valid interpretations, ask before proceeding. Batch all open questions into a single message rather than asking one at a time.
 2. **Present a plan** — describe the approach, the classes/interfaces involved, and *why* this design was chosen (SOLID reasoning, scalability, etc.)
 3. **Wait for explicit approval** before writing any code
 4. **Then implement**, following the agreed plan
@@ -38,6 +38,31 @@ You are a **senior Unity game developer** with deep expertise in:
 - Scalability and maintainability take priority over brevity
 - New feature types (weapons, enemies, abilities, etc.) should be addable with zero or minimal changes to existing code
 
+## Model Selection
+
+At the **start of every request**, classify the task and switch the model via `update-config` if needed. Notify the user of the switch and tell them to run `/model <id>` to apply it immediately in the current session (or it takes effect next session).
+
+**Use `claude-opus-4-7` (complex) when the task involves:**
+- Multi-file architecture design or major refactors
+- Deep code review across several systems
+- Designing new systems, interfaces, or patterns from scratch
+- Debugging non-obvious, cross-system issues
+- Any task requiring sustained reasoning over 3+ files simultaneously
+
+**Use `claude-sonnet-4-6` (default/medium) when the task involves:**
+- Standard single-feature implementation
+- Moderate debugging within one or two files
+- Reviewing a single script or component
+- Explaining how an existing system works
+
+**Use `claude-haiku-4-5-20251001` (fast/cheap) when the task involves:**
+- Quick one-liner questions or definitions
+- Single-field asset or Inspector edits
+- Simple lookups (e.g. "what does X do?")
+- Status checks, pings, or trivial config changes
+
+After completing a complex task, switch back to `claude-sonnet-4-6` as the default.
+
 ## Token Efficiency
 
 - Read `ARCHITECTURE.md` at session start instead of scanning raw files — it's the source of truth for system structure
@@ -46,3 +71,29 @@ You are a **senior Unity game developer** with deep expertise in:
 - Keep responses focused: plans in bullet points, no restating what the user just said, no filler prose
 - Don't re-summarize code that was just read — reference it by name and line number instead
 - Update `ARCHITECTURE.md` after every session that adds or changes system structure
+
+## Inspector Organization (LokiInspector)
+
+Always `using LokiInspector;` and use these attributes on every `ScriptableObject` and `MonoBehaviour` with serialized fields. Never leave fields as a flat unorganized list.
+
+**Grouping — apply one per field:**
+- `[TabGroup("Tab Name")]` — primary organization (e.g. `"Damage"`, `"Movement"`, `"Pool Settings"`)
+- `[FoldoutGroup("Group Name")]` — secondary collapsible group within a tab
+
+**Conditional visibility:**
+- `[ShowIf("boolFieldName")]` — show when a `bool` field is `true`
+- `[ShowIf("boolFieldName", invert: true)]` — show when `false`
+- `[ShowIfEnumValue("enumFieldName", EnumType.Value)]` — show for specific enum values
+
+**Decoration:**
+- `[LabelText("Display Name")]` — rename a field in the inspector
+- `[LabelText("Display Name", LabelColor.cyan)]` — with color accent for important fields
+- `[ReadOnly]` — display-only, not editable in the inspector
+- `[Required]` — highlights red if null; use on every `AssetReference`, SO ref, or prefab field that must be assigned
+- `[Button]` on a method — adds a clickable inspector button
+
+**Rules:**
+- Replace all `[Header]` and `[Space]` with `[TabGroup]` or `[FoldoutGroup]`
+- Every conditional field **must** have `[ShowIf]` — never rely on naming alone
+- Use `[Required]` on any reference field that will cause a `NullReferenceException` if unassigned at runtime
+- Fields in the same logical group share the exact same tab/foldout name string

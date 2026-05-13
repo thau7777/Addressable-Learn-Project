@@ -7,7 +7,7 @@ using UnityEngine;
 public class GunData : WeaponData
 {
     [TabGroup("Basic Settings")]
-    public ProjectileSettings projectileSettings;
+    [Required] public ProjectileSettings projectileSettings;
 
     [SerializeField, TabGroup("Basic Settings")]
     private uint _ammoPerMagazine = 30;
@@ -47,17 +47,14 @@ public class GunData : WeaponData
     public uint AmmoPerMagazine => _ammoPerMagazine;
     public uint MagazineCapacity => _magazineCapacity;
     public float ReloadTime => _reloadTime;
-
     public float BulletSpeed => _bulletSpeed;
-    public float BulletDamage => _bulletDamage;
-
+    public float BaseBulletDamage => _bulletDamage;
     public float SpreadOnShoot => spreadOnShoot;
     public float ReturnDuration => returnDuration;
     public float MaxSpreadThreshold => maxSpreadThreshold;
     public float SpreadDuration => spreadDuration;
     public AnimationCurve SpreadCurve => spreadCurve;
     public AnimationCurve ReturnCurve => returnCurve;
-
     public float RecoilDistance => _recoilDistance;
     public float RecoilDuration => _recoilDuration;
     public float RecoilReturnDuration => _recoilReturnDuration;
@@ -68,7 +65,10 @@ public class GunData : WeaponData
     {
         await base.LoadWeaponAssetsAsync();
         if (projectileSettings != null)
+        {
             await projectileSettings.LoadPrefabAsync();
+            if (projectileSettings.onImpactVfx != null)
+                await projectileSettings.onImpactVfx.LoadPrefabAsync();
+        }
     }
-    
 }

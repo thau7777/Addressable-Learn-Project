@@ -26,12 +26,12 @@ public class WeaponManager : Singleton<WeaponManager>
 
     public void UnequipWeapon(WeaponData weaponData)
     {
-        IWeapon weapon = _activeWeapons.Find(w => w.IsEquals(weaponData));
+        IWeapon weapon = _activeWeapons.Find(w => w.IsEquippedWith(weaponData));
         if (weapon == null) return;
 
         weapon.OnUnequip();
         _activeWeapons.Remove(weapon);
-        Destroy(((Weapon)weapon).gameObject);
+        Destroy(weapon.Transform.gameObject);
         RefreshWeaponPositions();
     }
 
@@ -39,7 +39,7 @@ public class WeaponManager : Singleton<WeaponManager>
     {
         int count = _activeWeapons.Count;
         for (int i = 0; i < count; i++)
-            ((Weapon)_activeWeapons[i]).transform.localPosition = CalculateSlotPosition(i, count);
+            _activeWeapons[i].Transform.localPosition = CalculateSlotPosition(i, count);
     }
 
     private Vector3 CalculateSlotPosition(int index, int total)

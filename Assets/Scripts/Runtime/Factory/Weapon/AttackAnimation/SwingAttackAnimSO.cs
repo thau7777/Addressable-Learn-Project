@@ -10,6 +10,7 @@ public class SwingAttackAnimSO : WeaponAttackAnimSO
     [SerializeField] private float _swingAngle = 120f;
     [SerializeField] private float _swingDuration = 0.2f;
     [SerializeField] private float _returnDuration = 0.15f;
+    [SerializeField] private Vector3 _swingAxis = new Vector3(1f, 1f, 0f);
     [SerializeField] private Ease _lungeEase = Ease.OutQuart;
     [SerializeField] private Ease _swingEase = Ease.OutQuad;
     [SerializeField] private Ease _returnEase = Ease.InOutQuad;
@@ -31,7 +32,7 @@ public class SwingAttackAnimSO : WeaponAttackAnimSO
 
         Vector3 lungePos = originLocalPos + localDir * lungeDistance;
         // Swing around the model's own local X (transform.right) — adapts automatically as weapon faces target
-        Quaternion swingRot = originLocalRot * Quaternion.AngleAxis(_swingAngle, Vector3.right);
+        Quaternion swingRot = originLocalRot * Quaternion.AngleAxis(_swingAngle, _swingAxis.normalized);
 
         float scaledLungeDur   = _lungeDuration  * attackInterval;
         float scaledSwingDur   = _swingDuration  * attackInterval;

@@ -13,11 +13,12 @@ MonoBehaviour:
   m_Name: SwingAttackAnim
   m_EditorClassIdentifier: Game.Factory::SwingAttackAnimSO
   _lungeDuration: 0.08
-  _lungeOffset: 0.89
-  _swingDelay: 0
+  _lungeOffset: 1
+  _swingDelay: 0.03
   _swingAngle: 120
   _swingDuration: 0.04
   _returnDuration: 0.15
+  _swingAxis: {x: 1, y: 0, z: 0}
   _lungeEase: 12
   _swingEase: 6
   _returnEase: 7
