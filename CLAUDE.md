@@ -63,6 +63,12 @@ At the **start of every request**, classify the task and switch the model via `u
 
 After completing a complex task, switch back to `claude-sonnet-4-6` as the default.
 
+## Async / Coroutines
+
+- **Prefer UniTask over Coroutines** for any async-style work that can be expressed with `UniTask`/`UniTaskVoid` (delays, lerps, awaiting completion, sequential async flows). Coroutines allocate per `StartCoroutine` (Coroutine object + boxed `IEnumerator` state machine); UniTask is struct-based and zero-alloc after JIT.
+- **Only fall back to Coroutines** when UniTask genuinely cannot express the behavior (e.g. tight integration with a `CustomYieldInstruction` that has no UniTask equivalent).
+- For pooled `MonoBehaviour`s, gate in-flight UniTasks with a `CancellationTokenSource` created in `OnEnable` and cancelled+disposed in `OnDisable` — Unity does NOT auto-stop UniTask continuations on disable the way it stops coroutines.
+
 ## Token Efficiency
 
 - Read `ARCHITECTURE.md` at session start instead of scanning raw files — it's the source of truth for system structure

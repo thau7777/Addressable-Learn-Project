@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a3e8c92d1b54f0a8b6c5d4e3f2a1b04, type: 3}
+  m_Name: BounceShootAttackData
+  m_EditorClassIdentifier: Assembly-CSharp::BounceShootAttackData
+  attackRange: 8
+  cooldown: 2
+  animData: {fileID: 11400000, guid: 7a3e8c92d1b54f0a8b6c5d4e3f2a1c05, type: 2}
+  attackFlyweightSettings: {fileID: 11400000, guid: 4627d9c4b09b7934f92b2182d215999c, type: 2}
+  positionOffset: {x: 0, y: 0, z: 0}
+  rotationOffset: {x: 0, y: 0, z: 0, w: 0}
+  bulletSpeed: 15
+  bulletRange: 20
+  projectileSpawnLocalOffset: {x: 0, y: 0, z: 0}

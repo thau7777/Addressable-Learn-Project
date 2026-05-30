@@ -1,0 +1,30 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 501147fad27617345a14e20414bf52dc, type: 3}
+  m_Name: Adrenaline
+  m_EditorClassIdentifier: 
+  _displayName: Adrenaline
+  _description: Caffeine for your legs.
+  _icon: {fileID: 0}
+  _rarityVisuals: {fileID: 11400000, guid: 53b9db8bf1fcddf47b5ce4bb82dd8680, type: 2}
+  _movement:
+    moveSpeedPercent: 15
+    maxHealthPercent: 0
+    pickupRadiusPercent: 0
+  _melee:
+    damagePercent: 0
+    attackRatePercent: 0
+    rangePercent: 0
+  _ranged:
+    damagePercent: 0
+    attackRatePercent: 0
+    rangePercent: 0

@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f36aa458796020343a913e78758fb06e, type: 3}
+  m_Name: Watermelon
+  m_EditorClassIdentifier: Game.Enemy::EnemyData
+  collectionCheck: 1
+  defaultCapacity: 10
+  maxPoolSize: 30
+  prefabRef:
+    m_AssetGUID: 89ea9ba03710a194a889a5ba5e259211
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  maxHP: 50
+  baseDamage: 1
+  moveSpeed: 2
+  expDrop: 5
+  ripenessRate: 1
+  spawnDuration: 0.5
+  movementStrategy: {fileID: 11400000, guid: c724ec30bfc61ee4a93c749f49111611, type: 2}
+  attackStrategy: {fileID: 11400000, guid: 7a3e8c92d1b54f0a8b6c5d4e3f2a1c02, type: 2}
+  explodeVfxSettings: {fileID: 11400000, guid: e0b0d402d4fbb2e4e9e542858aa822e4, type: 2}
+  pickableSettings: {fileID: 11400000, guid: 5bdef0b82f52aab42a0a96aa042d57e8, type: 2}
+  splitsOnDeath: 0
+  splitEnemyData: {fileID: 0}
+  splitCount: 3

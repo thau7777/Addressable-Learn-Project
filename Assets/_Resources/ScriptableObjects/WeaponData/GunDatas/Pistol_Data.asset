@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c34375dcf65b1fa4da1252a1c5595d36, type: 3}
+  m_Name: Pistol_Data
+  m_EditorClassIdentifier: Assembly-CSharp::GunData
+  weaponPrefabRef:
+    m_AssetGUID: cf4625848d6e6024ca822204d6ff13b6
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  weaponIconRef:
+    m_AssetGUID: 
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_SubObjectGUID: 
+    m_EditorAssetChanged: 0
+  _baseWeaponRange: 10
+  projectileSettings: {fileID: 11400000, guid: 6e1c7efd19e7e4344a914c2e5b656894, type: 2}
+  muzzleVfxSettings: {fileID: 11400000, guid: 7a99b24f7145aa24da896f980eacc4ae, type: 2}
+  _ammoPerMagazine: 30
+  _magazineCapacity: 3
+  _reloadTime: 1.5
+  _bulletSpeed: 50
+  _recoilDistance: 0.15
+  _recoilDuration: 0.05
+  _recoilReturnDuration: 0.12
+  _recoilEase: 6
+  _recoilReturnEase: 4

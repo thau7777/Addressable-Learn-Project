@@ -1,0 +1,78 @@
+using Cysharp.Threading.Tasks;
+using System.Linq;
+using UnityEngine;
+
+public class EnemyManager : Singleton<EnemyManager>
+{
+    [SerializeField] private EnemyData[] _enemyDataArray;
+    [SerializeField] private float _spawnRadius = 10f;
+    [SerializeField] private ExpDropSettings _expSettings;
+
+    private Transform _playerTransform;
+    private EventBinding<EnemyDeathEvent> _enemyDeathBinding;
+    private EventBinding<PlayerSpawnedEvent> _playerSpawnedBinding;
+
+    private void OnEnable()
+    {
+        _enemyDeathBinding = new EventBinding<EnemyDeathEvent>(OnEnemyDeath);
+        EventBus<EnemyDeathEvent>.Register(_enemyDeathBinding);
+
+        _playerSpawnedBinding = new EventBinding<PlayerSpawnedEvent>(OnPlayerSpawned);
+        EventBus<PlayerSpawnedEvent>.Register(_playerSpawnedBinding);
+    }
+
+    private void OnDisable()
+    {
+        EventBus<EnemyDeathEvent>.Deregister(_enemyDeathBinding);
+        EventBus<PlayerSpawnedEvent>.Deregister(_playerSpawnedBinding);
+    }
+
+    private void OnPlayerSpawned(PlayerSpawnedEvent evt)
+    {
+        _playerTransform = evt.PlayerTransform;
+        StartSpawnFlowAsync().Forget();
+    }
+
+    private async UniTaskVoid StartSpawnFlowAsync()
+    {
+        if (!_expSettings || !_playerTransform) return;
+        await _expSettings.LoadPrefabAsync();
+        LoadAllAndSpawn().Forget();
+    }
+
+    private async UniTaskVoid LoadAllAndSpawn()
+    {
+        bool[] results = await UniTask.WhenAll(
+            _enemyDataArray.Select(data => data.LoadPrefabAsync())
+        );
+
+        if (results.All(success => success))
+            SpawnEnemyRandomAroundPlayer();
+        else
+            Debug.LogError("One or more enemy prefabs failed to load.");
+    }
+
+    private void SpawnEnemyRandomAroundPlayer()
+    {
+        int count = _enemyDataArray.Length;
+        float angleStep = 360f / count;
+        float randomOffset = Random.Range(0f, 360f);
+
+        for (int i = 0; i < count; i++)
+        {
+            float angle = Mathf.Deg2Rad * (angleStep * i + randomOffset);
+            Vector3 spawnPosition = _playerTransform.position + new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * _spawnRadius;
+            spawnPosition.y = 0;
+
+            EnemyController enemy = FlyweightFactory.Spawn(_enemyDataArray[i]) as EnemyController;
+            enemy.FlyweightInit(spawnPosition, Quaternion.identity);
+            enemy.SetTarget(_playerTransform);
+        }
+    }
+
+    private void OnEnemyDeath(EnemyDeathEvent evtData)
+    {
+        ExpDrop exp = FlyweightFactory.Spawn(_expSettings) as ExpDrop;
+        exp.FlyweightInit(evtData.EnemyTransform.position.Add(y:1), Quaternion.identity);
+    }
+}

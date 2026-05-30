@@ -1,0 +1,22 @@
+{
+    "name": "Game.Combat",
+    "rootNamespace": "",
+    "references": [
+        "Game.Core",
+        "Game.VFX",
+        "UniTask",
+        "UniTask.Addressables",
+        "PrimeTween.Runtime",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

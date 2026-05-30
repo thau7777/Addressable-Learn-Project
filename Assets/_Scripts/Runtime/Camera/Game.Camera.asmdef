@@ -1,0 +1,18 @@
+{
+    "name": "Core.Camera",
+    "rootNamespace": "",
+    "references": [
+        "GUID:1f2d794a51d660c4bb37b1bd97234ac9",
+        "GUID:4307f53044263cf4b835bd812fc161a4",
+        "GUID:ff30a295b91d6e34a9d65a8560222d2a"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

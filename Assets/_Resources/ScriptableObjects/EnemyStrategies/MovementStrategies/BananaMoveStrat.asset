@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c7a967f07388a0449a1c74336c6a1f1f, type: 3}
+  m_Name: BananaMoveStrat
+  m_EditorClassIdentifier: Assembly-CSharp::ZigzagMovementData
+  dashMultiplier: 5
+  dashDistance: 4
+  lateralOffset: 1.5
+  pauseDuration: 0.5
+  pauseReductionFactor: 0.1
+  minPauseDuration: 0.05
+  trailPrefab: {fileID: 2667481395557198162, guid: 57f306f8ff12fd8418db2eb5b7944da6, type: 3}
+  positionOffset: {x: 0, y: 0.3, z: 0.1}

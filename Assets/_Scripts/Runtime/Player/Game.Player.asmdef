@@ -1,0 +1,21 @@
+{
+    "name": "Game.Player",
+    "rootNamespace": "",
+    "references": [
+        "Game.Core",
+        "Game.Combat",
+        "UniTask",
+        "Unity.ResourceManager",
+        "Unity.Addressables",
+        "Game.Pickups"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

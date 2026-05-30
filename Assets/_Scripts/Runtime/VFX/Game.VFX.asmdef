@@ -1,0 +1,23 @@
+{
+    "name": "Game.VFX",
+    "rootNamespace": "",
+    "references": [
+        "Game.Core",
+        "UniTask"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.visualeffectgraph",
+            "expression": "",
+            "define": "UNITY_VFX_GRAPH"
+        }
+    ],
+    "noEngineReferences": false
+}

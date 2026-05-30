@@ -25,6 +25,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 0eab2003350049c48b6074b8b39cef66
+    m_Address: Assets/Resources_moved/Prefabs/Bullet/Pineapple_Spike.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 29942ab499c03ae47b1fe3c8a5a57154
+    m_Address: Assets/Resources_moved/Prefabs/Enemy/Pineapple.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 2b36226b8586cbb419c5503d66f105d2
     m_Address: Assets/Resources_moved/Prefabs/UI/DotCrosshair.prefab
     m_ReadOnly: 0
@@ -35,6 +45,16 @@ MonoBehaviour:
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 453eed969f604c2429ff6e7f28146d0c
+    m_Address: Assets/_Resources_moved/Prefabs/Player/Player.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 479f120a81efd124e9ea1c892fbfed88
+    m_Address: Assets/_Resources_moved/Prefabs/Pickable/Exp_Small.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 49c5f292e86f9224ea4f27b31f97a148
     m_Address: Assets/Resources_moved/Prefabs/Weapon/Baseball_Bat.prefab
     m_ReadOnly: 0
@@ -42,6 +62,31 @@ MonoBehaviour:
     FlaggedDuringContentUpdateRestriction: 0
   - m_GUID: 512c65a3a388ea84a99bac18f91d5ed1
     m_Address: Assets/Resources_moved/Prefabs/Enemy/Banana.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 72c706d62ad012342867cf2a9937547b
+    m_Address: Assets/Resources_moved/Prefabs/Vfx/MelonExplode.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 89ea9ba03710a194a889a5ba5e259211
+    m_Address: Assets/Resources_moved/Prefabs/Enemy/WaterMelon.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: 9fa7ec6d2c8009c448f5bdf8d8196732
+    m_Address: Assets/Resources_moved/Prefabs/Vfx/StrawberryExplode.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: a496114c270b44e4ca4ac292e83b8d08
+    m_Address: Assets/Resources_moved/Prefabs/Vfx/BananaExplode.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ced63b87d0d586242b4a41ea7c41dbd1
+    m_Address: Assets/Resources_moved/Prefabs/Vfx/MuzzleFlash.prefab
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

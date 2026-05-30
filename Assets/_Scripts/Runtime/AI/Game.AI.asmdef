@@ -1,0 +1,24 @@
+{
+    "name": "Game.AI",
+    "rootNamespace": "",
+    "references": [
+        "Game.Core",
+        "Game.VFX",
+        "Game.Combat",
+        "Game.Pickups",
+        "UniTask",
+        "UniTask.Addressables",
+        "PrimeTween.Runtime",
+        "Unity.Addressables",
+        "Unity.ResourceManager"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
