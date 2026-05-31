@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b84a0d022be9cd64ca532881df8f61ae, type: 3}
+  m_Name: New Staged Attack Anim Data
+  m_EditorClassIdentifier: Game.AI::StagedAttackAnimData
+  windUp:
+    name: Wind-up
+    duration: 0.15
+    repeatCount: 1
+    strikesPerRepeat: 0
+    strikeTime: 1
+    facing: 0
+    modules:
+    - rid: 1198732246658580566
+  attack:
+    name: Attack
+    duration: 0.15
+    repeatCount: 1
+    strikesPerRepeat: 1
+    strikeTime: 1
+    facing: 0
+    modules: []
+  returnStage:
+    name: Return
+    duration: 0.2
+    repeatCount: 1
+    strikesPerRepeat: 0
+    strikeTime: 1
+    facing: 0
+    modules: []
+  references:
+    version: 2
+    RefIds:
+    - rid: 1198732246658580566
+      type: {class: ArcModule, ns: , asm: Game.AI}
+      data:
+        height: 3
+        apexTimeRatio: 0.6
+        upEase: 6
+        downEase: 5

@@ -1,3 +1,4 @@
+using Cysharp.Threading.Tasks;
 using LokiInspector;
 using System;
 using UnityEngine;
@@ -19,9 +20,8 @@ public abstract class AttackStrategyData : ScriptableObject
 
     [Required] public AttackAnimData animData;
 
-    public FlyweightSettings attackFlyweightSettings;
-    public Vector3 positionOffset;
-    public Quaternion rotationOffset;
-
     public abstract IAttackStrategy CreateStrategy();
+
+    /// <summary>Preload any pooled assets this strategy spawns (hitboxes / projectiles). Called by EnemyData.LoadPrefabAsync.</summary>
+    public virtual UniTask PreloadAsync() => UniTask.CompletedTask;
 }

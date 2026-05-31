@@ -37,7 +37,7 @@ public class EnemyData : FlyweightSettings
 
     public override async UniTask<bool> LoadPrefabAsync()
     {
-        if (attackStrategy.attackFlyweightSettings != null) await attackStrategy.attackFlyweightSettings.LoadPrefabAsync();
+        if (attackStrategy != null) await attackStrategy.PreloadAsync();
         if (explodeVfxSettings != null) await explodeVfxSettings.LoadPrefabAsync();
         if (splitsOnDeath && splitEnemyData != null) await splitEnemyData.LoadPrefabAsync();
         return await base.LoadPrefabAsync();

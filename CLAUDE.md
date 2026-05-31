@@ -38,30 +38,28 @@ You are a **senior Unity game developer** with deep expertise in:
 - Scalability and maintainability take priority over brevity
 - New feature types (weapons, enemies, abilities, etc.) should be addable with zero or minimal changes to existing code
 
-## Model Selection
+## Model & Effort Selection
 
-At the **start of every request**, classify the task and switch the model via `update-config` if needed. Notify the user of the switch and tell them to run `/model <id>` to apply it immediately in the current session (or it takes effect next session).
+**Always use `claude-opus-4-8`.** Never switch to Sonnet or Haiku — Opus 4.8 is the only model for this project. Do not propose or apply model downgrades.
 
-**Use `claude-opus-4-7` (complex) when the task involves:**
-- Multi-file architecture design or major refactors
-- Deep code review across several systems
-- Designing new systems, interfaces, or patterns from scratch
-- Debugging non-obvious, cross-system issues
-- Any task requiring sustained reasoning over 3+ files simultaneously
+Instead of switching models, modulate **effort level** based on task size and difficulty:
 
-**Use `claude-sonnet-4-6` (default/medium) when the task involves:**
+**Default to `high` effort for most tasks**, including:
 - Standard single-feature implementation
 - Moderate debugging within one or two files
 - Reviewing a single script or component
 - Explaining how an existing system works
+- Quick questions, lookups, and trivial config changes
 
-**Use `claude-haiku-4-5-20251001` (fast/cheap) when the task involves:**
-- Quick one-liner questions or definitions
-- Single-field asset or Inspector edits
-- Simple lookups (e.g. "what does X do?")
-- Status checks, pings, or trivial config changes
+**Raise to the highest effort (`extra`/max) only when the task is large or hard**, such as:
+- Multi-file architecture design or major refactors
+- Deep code review across several systems
+- Designing new systems, interfaces, or patterns from scratch
+- Debugging non-obvious, cross-system issues
+- Sustained reasoning over 3+ files simultaneously
+- Anything that involves writing a lot of new code at once
 
-After completing a complex task, switch back to `claude-sonnet-4-6` as the default.
+After finishing a high-effort task, return to `high` as the baseline for subsequent work.
 
 ## Async / Coroutines
 

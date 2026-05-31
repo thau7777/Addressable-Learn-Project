@@ -75,8 +75,8 @@ AI/                                [Game.AI]
     EnemyController, EnemyData, IEnemyContext
     States/                        — Spawn/Idle/Move/Attack/Die
     Strategies/Movement/           — IMovementStrategy + Chaser/Ranged/Zigzag SOs
-    Strategies/Attack/             — IAttackStrategy + StandardMelee/SpinLunge/JumpLand/BounceShoot SOs
-    AttackAnimData/                — IAttackAnimation + matching anim SOs
+    Strategies/Attack/             — IAttackStrategy + unified StagedAttackData + IStrikeSpawner (Vfx/Projectile)
+    AttackAnimData/                — IAttackAnimation + StagedAttackAnimData + IMotionModule library
 
 Pickups/                           [Game.Pickups]
   Pickable, ExpDrop, PickableSettings, ExpDropSettings
@@ -253,21 +253,28 @@ All strategies and animations take `IEnemyContext` instead of `EnemyController`.
 | Interface | Method signature | Notes |
 |---|---|---|
 | `IMovementStrategy` | `Move(IEnemyContext, Transform target)` | Chaser, Ranged, Zigzag |
-| `IAttackStrategy` | `Tick(float dt)` / `StartAttack(IEnemyContext, Transform, Action)` / `Interrupt(IEnemyContext)` / `IsReady` / `ShouldFaceTarget` | `Tick` advances cooldown; `IsReady` gates re-attack. `ShouldFaceTarget` is a runtime flag the anim toggles via callback. |
-| `IAttackAnimation` | `Build(IEnemyContext, Transform, Action onStrike, Action onComplete, Action<bool> setFaceTarget)` / `OnInterrupt(IEnemyContext)` | StandardMeleeAnim, SpinLungeAnim, JumpLandAnim, BounceShootAnim. `setFaceTarget` toggles the strategy's `ShouldFaceTarget` flag at any phase boundary (e.g. lock direction at spin/jump start). |
+| `IAttackStrategy` | `Tick(float dt)` / `StartAttack(IEnemyContext, Transform, Action)` / `Interrupt(IEnemyContext)` / `IsReady` / `ShouldFaceTarget` | `Tick` advances cooldown; `IsReady` gates re-attack. `ShouldFaceTarget` is a runtime flag the anim toggles via callback. **One concrete impl: `StagedAttack`** (data: `StagedAttackData`). |
+| `IAttackAnimation` | `Build(IEnemyContext, Transform, Action onStrike, Action onComplete, Action<bool> setFaceTarget)` / `OnInterrupt(IEnemyContext)` | **One concrete impl: `StagedAttackAnim`** (data: `StagedAttackAnimData`). `setFaceTarget` toggles the strategy's `ShouldFaceTarget` flag at any phase boundary (e.g. lock direction at spin/jump start). |
+| `IMotionModule` | `Sequence Build(in MotionContext ctx)` | One composable motion contributed to a stage, run in parallel over the stage duration. Impls: `RotateOffset`, `Spin`, `Scale`, `BounceScale`, `Translate`, `Arc`. |
+| `IStrikeSpawner` | `Spawn(IEnemyContext owner, Transform target)` / `PreloadAsync()` | What an attack spawns per strike. Impls: `VfxStrikeSpawner` (OneShotVfx at owner/target-ground), `ProjectileStrikeSpawner` (projectile toward live target). Routes `owner.Damage`. |
 
 **Face-target gate:** `EnemyAttack.Tick` calls `Owner.RotateToPlayer()` only when `Owner.AttackStrategy.ShouldFaceTarget` is true. Each strategy resets the flag to `true` on `StartAttack`; the anim is the authority on when to flip it off (via the `setFaceTarget` callback in its `Build`). This keeps anims reusable across fruits — the lock-direction logic lives in the anim that needs it, not on a static SO bool.
 
-**Concrete attack strategies (one runtime class + one SO data class per pair):**
+**Unified, data-driven attack (one strategy + one anim, fully composed via SOs):**
 
-| Strategy | Anim | Behavior |
-|---|---|---|
-| `StandardMeleeAttack` | `StandardMeleeAnim` | Wind-up rotation tilt + strike squash + return. `SpawnAttackFlyweight` is still TODO. |
-| `SpinLungeAttack` | `SpinLungeAnim` | Wind-up tilt+squat → locked spin-and-lunge (owner.transform translates along snapshot direction while VisualRoot spins N×360° via `Tween.LocalEulerAngles` with `Ease.Linear`; anim calls `setFaceTarget(false)` at spin start). Strike fires at the top of each spin → spawns `attackFlyweightSettings` (OneShotVfx) at owner position with `OneShotVfxInit(owner.Damage)`. Owner returns to snapshot world position. |
-| `JumpLandAttack` | `JumpLandAnim` | Wind-up squat → owner.transform tweens to apex midpoint (height += `jumpHeight`) → falls to `target.x,owner.y,target.z` (snapshot at StartAttack). Landing fires strike, scale snaps to `landScale`, pause `landPauseDur`, then wobble back via `Ease.OutBack`. Anim locks face-target at jump start. Strike spawns OneShotVfx at landed position. |
-| `BounceShootAttack` | `BounceShootAnim` | N scale-Y bounces (squat ↓ then taller ↑); strike fires at the top of each bounce-up → spawns projectile via `FlyweightFactory.Spawn(projectileSettings)` and calls `ShootProjectile(spawnPos, target.position, new RuntimeProjectileLaunchData(speed, owner.Damage, range))`. Always faces target (anim never calls `setFaceTarget`). |
+There is now a **single** `StagedAttack`/`StagedAttackData` strategy and a **single** `StagedAttackAnim`/`StagedAttackAnimData` animation. All four legacy archetypes (melee, spin-lunge, jump-land, bounce-shoot) are now just **asset configurations** — no per-enemy classes.
 
-**Runtime IProjectileLaunchData for enemy projectiles:** `BounceShootAttack` defines a file-private `readonly struct RuntimeProjectileLaunchData : IProjectileLaunchData` that snapshots `(speed, owner.Damage, range)` at shoot time. This is the enemy-side equivalent of how `RangedWeapon` routes `Damage`/`Range` through `CharacterStats.Current` — damage buffs on the enemy controller flow to the projectile without ever mutating an SO.
+- **`StagedAttackAnimData`** — three `AttackStage`s (`windUp` / `attack` / `returnStage`). Each stage: `duration`, `repeatCount` (repeat whole stage N×, e.g. bounce), `strikesPerRepeat` + `strikeTime` (0..1 slot position — places the `onStrike` callbacks), `facing` (`Inherit`/`Lock`/`Unlock` — applied at stage start via `setFaceTarget`), and a `[SerializeReference] List<IMotionModule>` run in parallel over the stage. `StagedAttackAnim.Build` chains the 3 stages, loops each `repeatCount`, groups module sub-sequences, inserts strikes, and ends with `onComplete`. `OnInterrupt` stops the PrimeTween sequence and restores VisualRoot rotation/scale + owner position.
+- **`IMotionModule`** (`Sequence Build(in MotionContext ctx)`) — small composable motions in `MotionModules.cs`. `MotionContext` snapshots `VisualRoot`/`OwnerTransform`/`OgEuler`/`OgScale`/`OriginWorldPos`/`LockedDir`/`TargetGroundPos`/`StageDuration`. Multi-phase modules (`ArcModule`, `BounceScaleModule`) build their own nested sequence and get grouped concurrently — no Steps layer needed.
+  - `RotateOffsetModule` (tilt to og+offset), `SpinModule` (N turns about axis), `ScaleModule` (og×multiplier), `BounceScaleModule` (squat→stretch, repeat via stage), `TranslateModule` (lunge along LockedDir or return-to-origin), `ArcModule` (parabola onto TargetGroundPos).
+- **`StagedAttackData : AttackStrategyData`** — keeps `attackRange`/`cooldown`/`animData`; adds `[SerializeReference] IStrikeSpawner strikeSpawner`. `StagedAttack` holds the shared cooldown + `ShouldFaceTarget` plumbing; `onStrike` → `strikeSpawner?.Spawn(owner, target)`.
+- **`IStrikeSpawner`** (`StrikeSpawners.cs`) — `VfxStrikeSpawner` (OneShotVfx at `OwnerPosition` or `TargetGroundPosition` + offset, `OneShotVfxInit(owner.Damage)`) and `ProjectileStrikeSpawner` (projectile toward live `target.position`, owns the `RuntimeProjectileLaunchData` struct that snapshots `(speed, owner.Damage, range)`). `null` = no strike spawn. Both implement `PreloadAsync()`.
+
+**Archetype → asset config:** melee = windUp `RotateOffset` → attack `RotateOffset`+`Scale` (strike at end) → return `RotateOffset`+`Scale`, null spawner. spin-lunge = windUp `RotateOffset` → attack(`facing:Lock`) `Spin`+`Translate`, `strikesPerRepeat = spinCount`, `strikeTime 0` → return(`facing:Unlock`) `Translate(returnToOrigin)`+`RotateOffset`. jump-land = windUp `Scale` → attack(`facing:Lock`) `Arc`+`Scale`, strike at end → return(`facing:Unlock`) `Scale`. bounce-shoot = attack `BounceScale` with `repeatCount = bounceCount`, `ProjectileStrikeSpawner`.
+
+**Preload:** `AttackStrategyData.PreloadAsync()` (virtual; default no-op) is overridden by `StagedAttackData` to await `strikeSpawner.PreloadAsync()`. `EnemyData.LoadPrefabAsync` calls `attackStrategy.PreloadAsync()` (replaced the old `attackFlyweightSettings` preload). The base no longer carries `attackFlyweightSettings`/`positionOffset`/`rotationOffset`.
+
+**Runtime IProjectileLaunchData for enemy projectiles:** `ProjectileStrikeSpawner` defines a file-private `readonly struct RuntimeProjectileLaunchData : IProjectileLaunchData` that snapshots `(speed, owner.Damage, range)` at shoot time — the enemy-side equivalent of how `RangedWeapon` routes `Damage`/`Range` through `CharacterStats.Current`, so damage buffs flow to the projectile without mutating an SO.
 
 **Optional movement strategy interfaces (ISP):**
 
@@ -283,7 +290,7 @@ All strategies and animations take `IEnemyContext` instead of `EnemyController`.
 - **Pause** — `pauseDuration` (base), `pauseReductionFactor`, `minPauseDuration` (floor)
 - **Trail** — `[Required] trailPrefab` (`GameObject` containing a configured `TrailRenderer`), `positionOffset` (local offset applied to the instantiated trail child)
 
-**OCP compliance:** New enemy behavior = new strategy SO + strategy class. `EnemyController` untouched (interface checks are open-ended).
+**OCP compliance:** A brand-new attack archetype is usually **zero code** — just a new `StagedAttackAnimData` + `StagedAttackData` asset combination. New *motion primitive* = new `IMotionModule`; new *strike behavior* = new `IStrikeSpawner`. The strategy, anim runner, and `EnemyController` stay untouched (interface checks are open-ended).
 
 ---
 

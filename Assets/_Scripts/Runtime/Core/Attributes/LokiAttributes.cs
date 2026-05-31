@@ -102,6 +102,14 @@ namespace LokiInspector {
     #endregion
 
     #region Drawer Attributes
+
+    /// <summary>
+    /// Put on a <c>[SerializeReference]</c> field or <c>[SerializeReference] List&lt;T&gt;</c> of an
+    /// interface/abstract type to get a concrete-type selector dropdown per element in the inspector.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    public class SerializeReferenceDropdownAttribute : PropertyAttribute { }
+
     public class MinMaxSliderAttribute : PropertyAttribute
     {
         public float Min { get; }
